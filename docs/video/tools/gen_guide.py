@@ -13,7 +13,7 @@ scenes = json.loads((WORK / 'timing.json').read_text(encoding='utf-8'))
 DOC = Path(__file__).resolve().parents[1] / '영상_대본_및_연출가이드.md'
 
 SCREEN = {
-    'site': 'carepick.onrender.com', 'docs': 'carepick-api.onrender.com/docs', 'actions': 'GitHub Actions',
+    'site': 'vitapick.onrender.com', 'docs': 'vitapick-api.onrender.com/docs', 'actions': 'GitHub Actions',
 }
 ACTION = {
     'd01': '홈 히어로 제목 → 배지·대시보드 카드 강조 → 서비스 소개로 스크롤',
@@ -73,7 +73,7 @@ doc = f"""# carepick 10분 발표·시연 영상 — 대본 및 연출 가이드
 | --- | --- |
 | 파일 | `docs/video/carepick_final.mp4` (10:00, 1920×1080, 30fps, H.264 + AAC 스테레오) |
 | 발표자 | 이오리 (1인 풀스택) — 합성 음성 `{v.VOICE}`, 속도 {v.RATE}, 문장 사이 {v.GAP}초 쉼 |
-| 시연 | 운영 사이트 `carepick.onrender.com`의 **공용 테스트 계정 2개(일반 사용자 / 관리자)** 비교 |
+| 시연 | 운영 사이트 `vitapick.onrender.com`의 **공용 테스트 계정 2개(일반 사용자 / 관리자)** 비교 |
 | 장면 | {len(scenes)}개 · 실제 말하는 시간 {speech:.0f}초 / {v.TOTAL}초 |
 | 자막 | 화면 하단 자막 + `docs/video/carepick_final.srt` |
 

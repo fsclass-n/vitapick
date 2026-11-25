@@ -29,7 +29,7 @@ from .models import Food, Meal, OAuthTicket, User, utc_now
 env = os.getenv("APP_ENV", "development")
 demo_enabled = os.getenv("DEMO_ACCOUNTS_ENABLED", "false").lower() == "true"
 # Shared one-click accounts; ".local" is rejected by sign-up validation, so these cannot be claimed.
-demo_emails = {"user": "demo-user@carepick.local", "admin": "demo-admin@carepick.local"}
+demo_emails = {"user": "demo-user@vitapick.local", "admin": "demo-admin@vitapick.local"}
 secret_key = os.getenv("JWT_SECRET") or secrets.token_urlsafe(48)
 if env == "production" and not os.getenv("JWT_SECRET"):
     raise RuntimeError("JWT_SECRET is required in production")
@@ -38,7 +38,7 @@ frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
 backend_url = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
 password_hasher = PasswordHasher()
 bearer = HTTPBearer(auto_error=False)
-logger = logging.getLogger("carepick")
+logger = logging.getLogger("vitapick")
 ROLES = ("user", "admin", "viewer")  # viewer = 테스트 관리자: read-only admin console
 PARSE_LIMIT, PARSE_WINDOW = 20, 600
 parse_history: dict[int, deque] = defaultdict(deque)
@@ -61,10 +61,10 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="carepick API", lifespan=lifespan)
+app = FastAPI(title="vitapick API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list({frontend_url, "https://carepick.netlify.app", "http://localhost:5173", "http://127.0.0.1:5173"}),
+    allow_origins=list({frontend_url, "https://vitapick.netlify.app", "https://carepick.netlify.app", "http://localhost:5173", "http://127.0.0.1:5173"}),
     allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )

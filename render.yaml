@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: carepick-api
+    name: vitapick-api
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
@@ -21,9 +21,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        value: https://carepick.onrender.com
+        value: https://vitapick.onrender.com
       - key: BACKEND_URL
-        value: https://carepick-api.onrender.com
+        value: https://vitapick-api.onrender.com
       - key: DEMO_ACCOUNTS_ENABLED
         value: "true"
       - key: GEMINI_API_KEY

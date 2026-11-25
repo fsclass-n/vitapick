@@ -8,7 +8,7 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-database_url = os.getenv("DATABASE_URL", "sqlite:///./carepick-dev.db")
+database_url = os.getenv("DATABASE_URL", "sqlite:///./vitapick-dev.db")
 if os.getenv("APP_ENV") == "production" and not os.getenv("DATABASE_URL"):
     raise RuntimeError("DATABASE_URL is required in production")
 

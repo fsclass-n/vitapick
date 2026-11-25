@@ -1,6 +1,6 @@
 <div align="center">
 
-# carepick
+# vitapick
 
 **공공데이터 식품영양 정보를 자동으로 모으고, 신체 정보로 개인 목표를 계산해<br>오늘의 식단이 목표 대비 어디쯤인지 보여 주는 헬스케어 웹 서비스**
 
@@ -15,15 +15,15 @@
 [![TiDB](https://img.shields.io/badge/TiDB_Cloud-MySQL_compatible-E30C34?logo=tidb&logoColor=white)](backend/db.py)
 [![Docker](https://img.shields.io/badge/Docker-Render-2496ED?logo=docker&logoColor=white)](Dockerfile)
 
-[![Food data sync](https://img.shields.io/github/actions/workflow/status/fsclass-n/carepick/sync-foods.yml?label=food%20data%20sync&logo=githubactions&logoColor=white)](https://github.com/fsclass-n/carepick/actions/workflows/sync-foods.yml)
+[![Food data sync](https://img.shields.io/github/actions/workflow/status/fsclass-n/vitapick/sync-foods.yml?label=food%20data%20sync&logo=githubactions&logoColor=white)](https://github.com/fsclass-n/vitapick/actions/workflows/sync-foods.yml)
 [![Tests](https://img.shields.io/badge/backend_tests-12_passed-2ea44f?logo=pytest&logoColor=white)](tests/test_api.py)
-[![Render](https://img.shields.io/badge/API-Render-46E3B7?logo=render&logoColor=black)](https://carepick-api.onrender.com/docs)
-[![Netlify](https://img.shields.io/badge/Frontend-Netlify-00C7B7?logo=netlify&logoColor=white)](https://carepick.netlify.app)
-[![Repo size](https://img.shields.io/github/repo-size/fsclass-n/carepick?color=3f7455)](https://github.com/fsclass-n/carepick)
-[![Last commit](https://img.shields.io/github/last-commit/fsclass-n/carepick?color=3f7455)](https://github.com/fsclass-n/carepick/commits/main)
-[![Issues](https://img.shields.io/github/issues/fsclass-n/carepick?color=3f7455)](https://github.com/fsclass-n/carepick/issues)
+[![Render](https://img.shields.io/badge/API-Render-46E3B7?logo=render&logoColor=black)](https://vitapick-api.onrender.com/docs)
+[![Netlify](https://img.shields.io/badge/Frontend-Netlify-00C7B7?logo=netlify&logoColor=white)](https://vitapick.netlify.app)
+[![Repo size](https://img.shields.io/github/repo-size/fsclass-n/vitapick?color=3f7455)](https://github.com/fsclass-n/vitapick)
+[![Last commit](https://img.shields.io/github/last-commit/fsclass-n/vitapick?color=3f7455)](https://github.com/fsclass-n/vitapick/commits/main)
+[![Issues](https://img.shields.io/github/issues/fsclass-n/vitapick?color=3f7455)](https://github.com/fsclass-n/vitapick/issues)
 
-### [포트폴리오 사이트](https://fsclass-n.github.io/carepick/) · [라이브 서비스](https://carepick.onrender.com) · [API 문서](https://carepick-api.onrender.com/docs) · [▶ 10분 발표·시연 영상](https://fsclass-n.github.io/carepick/#theater)
+### [포트폴리오 사이트](https://fsclass-n.github.io/vitapick/) · [라이브 서비스](https://vitapick.onrender.com) · [API 문서](https://vitapick-api.onrender.com/docs) · [▶ 10분 발표·시연 영상](https://fsclass-n.github.io/vitapick/#theater)
 
 <sub>라이브 서비스 로그인 화면의 <b>일반 사용자 / 관리자</b> 테스트 계정 버튼으로 바로 체험할 수 있습니다. 무료 플랜이라 첫 접속 시 약 30초가 걸릴 수 있습니다.</sub>
 
@@ -167,7 +167,7 @@ with SessionLocal() as db:
 
 ## API Architecture
 
-모든 엔드포인트는 `/api` 아래에 있으며, 문서는 [Swagger](https://carepick-api.onrender.com/docs)에서 확인할 수 있습니다.
+모든 엔드포인트는 `/api` 아래에 있으며, 문서는 [Swagger](https://vitapick-api.onrender.com/docs)에서 확인할 수 있습니다.
 
 | 그룹 | 엔드포인트 | 권한 |
 | --- | --- | --- |
@@ -183,7 +183,7 @@ with SessionLocal() as db:
 ## Directory Structure
 
 ```text
-carepick/
+vitapick/
 ├── backend/                 # FastAPI 서버
 │   ├── main.py              # 라우트 · 인증/RBAC · OAuth · 영양 목표 계산
 │   ├── meal_parser.py       # 문장 → 식단 항목 (Gemini + 규칙 대체) · 식품 DB 매칭 · 영양 계산

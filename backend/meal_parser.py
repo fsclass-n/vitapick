@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from .models import Food
 
-logger = logging.getLogger("carepick")
+logger = logging.getLogger("vitapick")
 MEAL_TYPES = ("아침", "점심", "저녁", "간식")
 DEFAULT_SERVING_G = 200.0
 MATCH_THRESHOLD = 0.5

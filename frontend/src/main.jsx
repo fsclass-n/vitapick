@@ -26,7 +26,7 @@ const navItems = [
 ]
 const roleLabels = { user: '일반 사용자', admin: '관리자', viewer: '테스트 관리자' }
 const MEAL_TYPES = ['아침', '점심', '저녁', '간식']
-const REPO = 'https://github.com/fsclass-n/carepick'
+const REPO = 'https://github.com/fsclass-n/vitapick'
 const PHOTOS = [
   ['hero-bowl.jpg', 'Anna Pelzer', 'IGfIGP5ONV0'], ['colorful-bowl.jpg', 'Metin Ozer', 'Dmhjy9fDTKw'],
   ['avocado-bowl.jpg', 'Hermes Rivera', 'OzBLe_Eg1mg'], ['green-salad.jpg', 'sina piryae', 'bBzjWthTqb8'], ['salad-table.jpg', 'Roland Suciu', 'LlvSGfe0oSQ'],
@@ -66,14 +66,14 @@ function Pulse({ className = '' }) {
 }
 
 function App() {
-  const [token, setToken] = useState(() => sessionStorage.getItem('carepick_token'))
+  const [token, setToken] = useState(() => sessionStorage.getItem('vitapick_token'))
   const [user, setUser] = useState(null)
   const [drawer, setDrawer] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem('carepick_token')
+    sessionStorage.removeItem('vitapick_token')
     setToken(null)
     setUser(null)
     navigate('/')
@@ -99,7 +99,7 @@ function App() {
   }, [drawer])
 
   const signedIn = useCallback((result) => {
-    sessionStorage.setItem('carepick_token', result.access_token)
+    sessionStorage.setItem('vitapick_token', result.access_token)
     setToken(result.access_token)
     setUser(result.user)
     navigate('/dashboard', { replace: true })
@@ -160,14 +160,14 @@ function Footer({ signedIn }) {
       : <div className="footer-cta"><div><span className="eyebrow">START YOUR CARE</span><h2>오늘 먹은 한 끼부터, 나의 건강 기록을 시작하세요.</h2></div><Link className="button button-light" to="/login?mode=register">무료로 시작하기 <Icon icon={faArrowRight} /></Link></div>}
     <div className="footer-grid">
       <div className="footer-brand"><Brand light /><p>공공데이터 식품영양성분 DB와 개인 신체 정보를 바탕으로 하루 영양 목표를 계산하고, 식단 기록을 건강 리포트로 바꿔 주는 헬스케어 플랫폼입니다.</p>
-        <div className="footer-social"><a href={REPO} target="_blank" rel="noopener" aria-label="GitHub 저장소"><Icon icon={faGithub} /></a><a href="https://fsclass-n.github.io/carepick/" target="_blank" rel="noopener" aria-label="포트폴리오"><Icon icon={faBookMedical} /></a><a href={`${REPO}/issues`} target="_blank" rel="noopener" aria-label="문의하기"><Icon icon={faEnvelope} /></a></div></div>
+        <div className="footer-social"><a href={REPO} target="_blank" rel="noopener" aria-label="GitHub 저장소"><Icon icon={faGithub} /></a><a href="https://fsclass-n.github.io/vitapick/" target="_blank" rel="noopener" aria-label="포트폴리오"><Icon icon={faBookMedical} /></a><a href={`${REPO}/issues`} target="_blank" rel="noopener" aria-label="문의하기"><Icon icon={faEnvelope} /></a></div></div>
       <div><h4>서비스</h4><Link to="/dashboard">건강 대시보드</Link><Link to="/journal">AI 식단 기록</Link><Link to="/insights">영양 리포트</Link><Link to="/insights#goal">맞춤 목표 설정</Link></div>
       <div><h4>데이터 · 기술</h4><a href="https://www.data.go.kr/data/15127578/openapi.do" target="_blank" rel="noopener">식품영양성분 DB 출처 <Icon icon={faArrowUpRightFromSquare} /></a><a href={docs} target="_blank" rel="noopener">API 문서 <Icon icon={faArrowUpRightFromSquare} /></a><a href={`${apiBase}/api/health`} target="_blank" rel="noopener">서비스 상태 <Icon icon={faArrowUpRightFromSquare} /></a></div>
       <div><h4>고객 지원</h4><Link to="/policy#privacy">개인정보 처리 안내</Link><Link to="/policy#terms">서비스 이용 안내</Link><Link to="/policy#ai">AI 기능 안내</Link><a href={`${REPO}/issues`} target="_blank" rel="noopener">문의 · 오류 신고 <Icon icon={faArrowUpRightFromSquare} /></a></div>
     </div>
-    <div className="footer-notice"><Icon icon={faStethoscope} /><p><strong>의료 안내</strong> carepick의 목표치와 분석 결과는 일반적인 공식과 공공데이터로 계산한 참고 정보이며, 의사·영양사의 진단이나 처방을 대신하지 않습니다. 질환, 임신, 식이 제한이 있다면 전문가와 상담하세요.</p></div>
+    <div className="footer-notice"><Icon icon={faStethoscope} /><p><strong>의료 안내</strong> vitapick의 목표치와 분석 결과는 일반적인 공식과 공공데이터로 계산한 참고 정보이며, 의사·영양사의 진단이나 처방을 대신하지 않습니다. 질환, 임신, 식이 제한이 있다면 전문가와 상담하세요.</p></div>
     <div className="footer-bottom">
-      <span>© {new Date().getFullYear()} carepick · 운영 및 개발 이오리 · 1인 풀스택 프로젝트</span>
+      <span>© {new Date().getFullYear()} vitapick · 운영 및 개발 이오리 · 1인 풀스택 프로젝트</span>
       <span className="credits">Photos by {PHOTOS.map(([, n, id], i) => <a key={id} href={`https://unsplash.com/photos/${id}`} target="_blank" rel="noopener">{n}{i < PHOTOS.length - 1 ? ', ' : ''}</a>)} on Unsplash</span>
       <button className="top-button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="맨 위로 이동"><Icon icon={faArrowUp} /></button>
     </div>
@@ -277,12 +277,12 @@ function Login({ onLogin }) {
   const oauth = (name, label, className, content) => <button type="button" disabled={!providers[name]} title={providers[name] ? `${label}로 로그인` : `${label} 로그인 설정 대기 중`} aria-label={`${label}로 로그인`} className={`social-button ${className}`} onClick={() => window.location.assign(`${apiBase}/api/auth/oauth/${name}/start`)}>{content}</button>
   return <div className="auth-layout">
     <div className="auth-brand-panel" style={{ backgroundImage: 'linear-gradient(160deg,#0b3d3bf2 10%,#0b3d3bb8 60%,#0b3d3b80),url(/images/green-salad.jpg)' }}>
-      <div className="auth-panel-inner"><span className="eyebrow">YOUR HEALTH PARTNER</span><h1>건강한 하루는<br /><em>한 끼의 기록</em>에서<br />시작됩니다.</h1><p>공공데이터와 나의 신체 정보로 계산한 영양 목표, carepick이 매일 함께 확인해 드릴게요.</p></div>
+      <div className="auth-panel-inner"><span className="eyebrow">YOUR HEALTH PARTNER</span><h1>건강한 하루는<br /><em>한 끼의 기록</em>에서<br />시작됩니다.</h1><p>공공데이터와 나의 신체 정보로 계산한 영양 목표, vitapick이 매일 함께 확인해 드릴게요.</p></div>
       <div className="auth-vitals"><Pulse /><div><span><Icon icon={faHeartPulse} /> 영양 균형 지수</span><span><Icon icon={faFire} /> 열량 목표 대비</span><span><Icon icon={faChartPie} /> 탄·단·지 비율</span></div></div>
       <div className="auth-panel-footer"><Icon icon={faShieldHeart} /> 비밀번호는 Argon2로 안전하게 보호됩니다.</div>
     </div>
     <div className="auth-form-panel"><div className="auth-form-wrap">
-      <div className="auth-heading"><span className="eyebrow">WELCOME TO CAREPICK</span><h2>{mode === 'login' ? '다시 오신 것을 환영해요.' : '건강 기록을 시작해요.'}</h2><p>{mode === 'login' ? '오늘의 건강 지표를 확인해 볼까요?' : '이메일과 비밀번호만 있으면 바로 시작할 수 있어요.'}</p></div>
+      <div className="auth-heading"><span className="eyebrow">WELCOME TO VITAPICK</span><h2>{mode === 'login' ? '다시 오신 것을 환영해요.' : '건강 기록을 시작해요.'}</h2><p>{mode === 'login' ? '오늘의 건강 지표를 확인해 볼까요?' : '이메일과 비밀번호만 있으면 바로 시작할 수 있어요.'}</p></div>
       <div className="auth-tabs"><button type="button" className={mode === 'login' ? 'selected' : ''} onClick={() => { setMode('login'); setError('') }}>로그인</button><button type="button" className={mode === 'register' ? 'selected' : ''} onClick={() => { setMode('register'); setError('') }}>회원가입</button></div>
       <form onSubmit={submit} className="auth-form">
         {mode === 'register' && <label>이름<input required value={form.name} maxLength={80} autoComplete="name" placeholder="이름을 입력해 주세요" onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>}
@@ -567,7 +567,7 @@ function Policy() {
   const location = useLocation()
   useEffect(() => { if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' }), 100) }, [location.hash])
   return <div className="app-page"><div className="container policy">
-    <PageHeading tag="POLICY" title="개인정보 · 서비스 이용 안내" description="carepick이 어떤 정보를 어떻게 다루는지 실제 구현 그대로 안내합니다." icon={faFileShield} />
+    <PageHeading tag="POLICY" title="개인정보 · 서비스 이용 안내" description="vitapick이 어떤 정보를 어떻게 다루는지 실제 구현 그대로 안내합니다." icon={faFileShield} />
     <section className="panel" id="privacy"><h3><Icon icon={faLock} /> 개인정보 처리 안내</h3><ul>
       <li><b>수집 항목</b> 이메일, 이름, 비밀번호(Argon2 해시로만 저장), 소셜 로그인 식별자, 선택 입력한 나이·성별·키·몸무게·활동량, 식단 기록</li>
       <li><b>이용 목적</b> 로그인, 개인 영양 목표 계산, 식단 리포트 제공. 광고나 제3자 판매에 쓰지 않습니다.</li>

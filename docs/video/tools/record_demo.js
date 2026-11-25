@@ -11,10 +11,10 @@ const puppeteer = require('puppeteer-core');
 
 const WORK = process.argv[2];
 const ONLY = new Set(process.argv.slice(3));
-const SITE = 'https://carepick.onrender.com';
-const API = 'https://carepick-api.onrender.com/api';
-const DOCS = 'https://carepick-api.onrender.com/docs';
-const ACTIONS = 'https://github.com/fsclass-n/carepick/actions';
+const SITE = 'https://vitapick.onrender.com';
+const API = 'https://vitapick-api.onrender.com/api';
+const DOCS = 'https://vitapick-api.onrender.com/docs';
+const ACTIONS = 'https://github.com/fsclass-n/vitapick/actions';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const scenes = JSON.parse(fs.readFileSync(path.join(WORK, 'timing.json'), 'utf8'));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -194,7 +194,7 @@ const SCRIPTS = {
     await at(2, -0.4); await d.click({ x: 22, y: 430 }, 700);
   },
   async d11({ d, at, page }) {
-    await at(0, 0.5); await page.evaluate(() => window.__addr('https://carepick.onrender.com', '/admin'));
+    await at(0, 0.5); await page.evaluate(() => window.__addr('https://vitapick.onrender.com', '/admin'));
     await sleep(500); await page.keyboard.press('Enter');
     await at(1, -0.8); await d.route('/admin'); await page.evaluate(() => window.__addrHide());
     await page.waitForSelector('.admin-only'); await at(1, 0); await d.hl('.admin-only h1', 3000); await d.move('.admin-only h1', 800);

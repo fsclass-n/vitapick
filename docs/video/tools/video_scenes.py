@@ -95,7 +95,7 @@ SCENES = [
         S('지금부터 실제 운영 중인 케어픽입니다.', '지금부터 실제 운영 중인 carepick입니다.'),
         S('렌더에 배포된 주소로, 실제 서버와 데이터베이스에 연결되어 있습니다.',
           'Render에 배포된 주소로, 실제 서버와 데이터베이스에 연결되어 있습니다.')],
-        tags=[(0, '실제 운영 서버 · carepick.onrender.com')]),
+        tags=[(0, '실제 운영 서버 · vitapick.onrender.com')]),
     dict(id='d02', part=USER, web='site', dur=18, lines=[
         S('로그인 화면은 왼쪽에 브랜드, 오른쪽에 로그인 폼을 둔 분할 화면입니다.'),
         S('구글, 네이버, 카카오 로그인과 테스트 계정 버튼이 한 화면에 있습니다.',
@@ -173,7 +173,7 @@ SCENES = [
         S('화면 뒤에 있는 실제 서버입니다.'),
         S('패스트 에이피아이가 만든 문서에서 인증, 식단, 관리자 에이피아이를 확인할 수 있습니다.',
           'FastAPI가 만든 문서에서 인증·식단·관리자 API를 확인할 수 있습니다.')],
-        tags=[(0, '실제 운영 API · carepick-api.onrender.com/docs')]),
+        tags=[(0, '실제 운영 API · vitapick-api.onrender.com/docs')]),
     dict(id='a09', part=ADMIN, web='actions', dur=13, lines=[
         S('공공데이터 수집은 깃허브 액션에 매주 실행되도록 예약되어 있습니다.',
           '공공데이터 수집은 GitHub Actions에 매주 실행되도록 예약되어 있습니다.'),

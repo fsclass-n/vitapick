@@ -25,9 +25,9 @@ def ul(items):
 def doc(stage, title, sections):
     blocks = [('sub', '[K-Digital] 심화_생성형 AI와 AWS 클라우드를 활용한 풀스택 & 자동화 실무 개발 Semi-Project'),
               ('title', f'{stage}단계 {title} 산출물'),
-              ('table', {'rows': [['항목', '내용'], ['프로젝트', 'carepick — 공공데이터 기반 헬스케어 & 맞춤형 영양 관리 플랫폼'],
-                                  ['수행', '이오리 (1인 프로젝트)'], ['저장소', 'github.com/fsclass-n/carepick'],
-                                  ['서비스', 'carepick.onrender.com · carepick.netlify.app · carepick-api.onrender.com/docs']], 'widths': [18, 82]})]
+              ('table', {'rows': [['항목', '내용'], ['프로젝트', 'vitapick — 공공데이터 기반 헬스케어 & 맞춤형 영양 관리 플랫폼'],
+                                  ['수행', '이오리 (1인 프로젝트)'], ['저장소', 'github.com/fsclass-n/vitapick'],
+                                  ['서비스', 'vitapick.onrender.com · vitapick.netlify.app · vitapick-api.onrender.com/docs']], 'widths': [18, 82]})]
     for i, (h, content) in enumerate(sections, 1):
         blocks.append(('h1', f'{i}. {h}'))
         for part in content.split(M):
@@ -153,7 +153,7 @@ DOCS['03_구현_산출물'] = doc(3, '구현', [
                      ['Data', '공공데이터 ETL, 페이지 단위 upsert', 'rpa/sync_foods.py'],
                      ['Test', '백엔드 자동 테스트 10개', 'tests/test_api.py'],
                      ['CI · 배포', '주간 동기화, Docker, 조건부 배포', '.github/workflows/sync-foods.yml, Dockerfile, render.yaml, netlify.toml']], [14, 46, 40])),
-    ('디렉터리 구조', '<p align="left" style="font-family:Consolas;font-size:9pt">carepick/<br>├── backend/ (main.py · models.py · db.py)<br>├── frontend/src/ (main.jsx · api.js · style.css)<br>├── rpa/sync_foods.py<br>├── tests/test_api.py<br>├── .github/workflows/sync-foods.yml<br>├── docs/ (설계서 · 진행일지 · 산출물 · 발표 자료 · 영상 · pdf)<br>├── index.html (GitHub Pages 포트폴리오)<br>└── Dockerfile · render.yaml · netlify.toml · requirements.txt</p>'),
+    ('디렉터리 구조', '<p align="left" style="font-family:Consolas;font-size:9pt">vitapick/<br>├── backend/ (main.py · models.py · db.py)<br>├── frontend/src/ (main.jsx · api.js · style.css)<br>├── rpa/sync_foods.py<br>├── tests/test_api.py<br>├── .github/workflows/sync-foods.yml<br>├── docs/ (설계서 · 진행일지 · 산출물 · 발표 자료 · 영상 · pdf)<br>├── index.html (GitHub Pages 포트폴리오)<br>└── Dockerfile · render.yaml · netlify.toml · requirements.txt</p>'),
     ('프런트엔드 구현', ul(['로그인: Split 레이아웃, 로그인/회원가입 탭, 비밀번호 정책 안내·검사, 소셜 버튼은 서버 설정 여부를 조회해 활성화, 테스트 계정 버튼은 서버 설정이 켜진 경우에만 표시',
                           'GNB: 햄버거 3선이 X로 회전, 우측 드로어(배경·ESC 닫기, 열린 동안 스크롤 잠금, 닫힌 메뉴는 inert)',
                           '디자인: Gowun Batang(제목) · Noto Sans KR(본문) · Manrope(수치), FontAwesome, 푸터 Top 버튼, prefers-reduced-motion 대응',
@@ -195,17 +195,17 @@ DOCS['03_구현_산출물'] = doc(3, '구현', [
 
 DOCS['04_배포_산출물'] = doc(4, '배포', [
     ('배포 구성', table([['구성', '주소', '방식', '자동 배포 조건'],
-                     ['프런트엔드', 'carepick.onrender.com', 'Render Static', 'main 브랜치 반영'],
-                     ['프런트엔드', 'carepick.netlify.app', 'Netlify(netlify.toml)', 'frontend/ · netlify.toml 변경 시'],
-                     ['백엔드 API', 'carepick-api.onrender.com', 'Render Web Service(Docker)', 'backend/ · rpa/ · requirements.txt · Dockerfile 변경 시'],
-                     ['DB', 'TiDB Cloud carepick 클러스터', 'TLS 연결', '—'],
+                     ['프런트엔드', 'vitapick.onrender.com', 'Render Static', 'main 브랜치 반영'],
+                     ['프런트엔드', 'vitapick.netlify.app', 'Netlify(netlify.toml)', 'frontend/ · netlify.toml 변경 시'],
+                     ['백엔드 API', 'vitapick-api.onrender.com', 'Render Web Service(Docker)', 'backend/ · rpa/ · requirements.txt · Dockerfile 변경 시'],
+                     ['DB', 'TiDB Cloud vitapick 클러스터', 'TLS 연결', '—'],
                      ['수집 배치', 'GitHub Actions', 'Sync public food data', '매주 월 11:30 KST + 수동'],
-                     ['포트폴리오', 'fsclass-n.github.io/carepick', 'GitHub Pages(index.html)', 'main 반영']], [14, 28, 26, 32])),
-    ('배포 절차', ul(['TiDB: carepick 데이터베이스 생성 → 서버 기동 시 테이블 자동 생성(create_all)',
+                     ['포트폴리오', 'fsclass-n.github.io/vitapick', 'GitHub Pages(index.html)', 'main 반영']], [14, 28, 26, 32])),
+    ('배포 절차', ul(['TiDB: vitapick 데이터베이스 생성 → 서버 기동 시 테이블 자동 생성(create_all)',
                      'Render: Docker Web Service 생성, 환경 변수 등록(DATABASE_URL · JWT_SECRET · FRONTEND_URL · BACKEND_URL · DEMO_ACCOUNTS_ENABLED 등), 헬스체크 /api/health',
                      'Netlify: 저장소 연결, netlify.toml이 빌드 명령·게시 폴더·VITE_API_URL 지정',
                      'GitHub Actions: Secrets(DATABASE_URL, MFDS_API_KEY) 등록 → 수동 실행으로 동기화 확인',
-                     'OAuth: 제공자 콘솔에 https://carepick-api.onrender.com/api/auth/oauth/{provider}/callback 등록'])),
+                     'OAuth: 제공자 콘솔에 https://vitapick-api.onrender.com/api/auth/oauth/{provider}/callback 등록'])),
     ('운영 검증 결과', table([['항목', '방법', '결과'],
                      ['API 헬스체크', 'GET /api/health', '200 OK'],
                      ['CORS', 'Render·Netlify 출처에서 OPTIONS 사전 요청', '200, 허용 출처 헤더 확인'],
@@ -232,8 +232,8 @@ DOCS['05_피드백_산출물'] = doc(5, '피드백', [
     ('최종 산출물 목록', table([['산출물', '위치', '설명'],
                      ['발표 자료', 'docs/프로젝트_발표자료.pptx · docs/pdf/프로젝트_발표자료.pdf', '16장, 운영 화면 캡처·다이어그램·발표자 노트'],
                      ['10분 발표·시연 영상', 'docs/video/carepick_final.mp4 · .srt', 'PPT → 일반 사용자 → 관리자 → 회고, 자막 152개'],
-                     ['3분 하이라이트', 'docs/video/carepick_highlight_3min.mp4', '계정 비교 장면 9개, 3:01'],
-                     ['포트폴리오 사이트', 'fsclass-n.github.io/carepick (index.html)', '영상 제자리 재생, 계산기, 권한 비교'],
+                     ['3분 하이라이트', 'docs/video/vitapick_highlight_3min.mp4', '계정 비교 장면 9개, 3:01'],
+                     ['포트폴리오 사이트', 'fsclass-n.github.io/vitapick (index.html)', '영상 제자리 재생, 계산기, 권한 비교'],
                      ['README · About', '저장소 첫 화면', '배지, 아키텍처, 기술적 난관, API, 디렉터리'],
                      ['진행일지 · 산출물', 'docs/*.hwpx · docs/산출물 · docs/pdf', '단계별 진행 기록과 산출물']], [20, 42, 38])),
     ('영상 검증 결과', table([['항목', '기준', '결과'], ['길이', '10:00 ±0.1초', '600.02초'], ['형식', '1920×1080, 30fps, H.264 + AAC 스테레오', '통과'],
@@ -257,6 +257,6 @@ DOCS['05_피드백_산출물'] = doc(5, '피드백', [
                        ['단기', 'UPDATE_DATE 기반 증분 동기화, Alembic 마이그레이션, 로그인 시도 제한'],
                        ['중기', 'pandas 기반 주간 영양 통계·이상치 탐지, 전문 검색 인덱스로 검색 정확도 개선, 프런트엔드 테스트'],
                        ['장기', 'LLM 자연어 식단 입력 → 공공데이터 영양값 자동 매핑, Docker 이미지 그대로 AWS 이관, 영상 파일 Git LFS/Release 이전']], [14, 86])),
-    ('결론', '<p align="left">carepick은 공공데이터를 자동으로 정제·적재하고, 서버가 지키는 권한 구조 위에서 개인 맞춤 영양 목표와 리포트를 제공합니다. 운영 배포 후 실제 응답을 대조하는 검증으로 배포 환경의 문제를 찾아 해결했으며, 발표 자료·영상·포트폴리오로 결과를 정리했습니다.</p>'),
+    ('결론', '<p align="left">vitapick은 공공데이터를 자동으로 정제·적재하고, 서버가 지키는 권한 구조 위에서 개인 맞춤 영양 목표와 리포트를 제공합니다. 운영 배포 후 실제 응답을 대조하는 검증으로 배포 환경의 문제를 찾아 해결했으며, 발표 자료·영상·포트폴리오로 결과를 정리했습니다.</p>'),
 ])
 

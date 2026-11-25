@@ -64,12 +64,12 @@ def test_auth_policy_and_private_meals(client):
 def test_netlify_origin_can_call_api(client):
     web, _ = client
     response = web.options("/api/meals", headers={
-        "Origin": "https://carepick.netlify.app",
+        "Origin": "https://vitapick.netlify.app",
         "Access-Control-Request-Method": "POST",
         "Access-Control-Request-Headers": "authorization,content-type",
     })
     assert response.status_code == 200
-    assert response.headers["access-control-allow-origin"] == "https://carepick.netlify.app"
+    assert response.headers["access-control-allow-origin"] == "https://vitapick.netlify.app"
 
 
 def test_admin_role_change_is_enforced_server_side(client):
@@ -240,7 +240,7 @@ def test_demo_accounts_work_in_production_and_demo_admin_is_read_only(client, mo
 
     # Demo admin is restored to read-only even if someone promoted it.
     with session() as db:
-        db.query(User).filter_by(email="demo-admin@carepick.local").one().role = "admin"
+        db.query(User).filter_by(email="demo-admin@vitapick.local").one().role = "admin"
         db.commit()
     assert web.post("/api/auth/demo-login", json={"role": "admin"}).json()["user"]["role"] == "viewer"
 
