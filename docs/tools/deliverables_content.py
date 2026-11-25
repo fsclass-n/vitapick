@@ -26,7 +26,7 @@ def doc(stage, title, sections):
     blocks = [('sub', '[K-Digital] 심화_생성형 AI와 AWS 클라우드를 활용한 풀스택 & 자동화 실무 개발 Semi-Project'),
               ('title', f'{stage}단계 {title} 산출물'),
               ('table', {'rows': [['항목', '내용'], ['프로젝트', 'vitapick — 공공데이터 기반 헬스케어 & 맞춤형 영양 관리 플랫폼'],
-                                  ['수행', '이오리 (1인 프로젝트)'], ['저장소', 'github.com/fsclass-n/vitapick'],
+                                  ['수행', '박미금 · 김모란 · 이오리(조장) · 홍기흥 (4인 팀 프로젝트)'], ['저장소', 'github.com/fsclass-n/vitapick'],
                                   ['서비스', 'vitapick.onrender.com · vitapick.netlify.app · vitapick-api.onrender.com/docs']], 'widths': [18, 82]})]
     for i, (h, content) in enumerate(sections, 1):
         blocks.append(('h1', f'{i}. {h}'))

@@ -4,7 +4,7 @@
 
 **공공데이터 식품영양 정보를 자동으로 모으고, 신체 정보로 개인 목표를 계산해<br>오늘의 식단이 목표 대비 어디쯤인지 보여 주는 헬스케어 웹 서비스**
 
-1인 풀스택 개발 · 이오리
+4인 팀 프로젝트 · 박미금 · 김모란 · 이오리(조장) · 홍기흥
 
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](requirements.txt)
 [![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](backend/main.py)

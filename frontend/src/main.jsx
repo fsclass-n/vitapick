@@ -167,7 +167,7 @@ function Footer({ signedIn }) {
     </div>
     <div className="footer-notice"><Icon icon={faStethoscope} /><p><strong>의료 안내</strong> vitapick의 목표치와 분석 결과는 일반적인 공식과 공공데이터로 계산한 참고 정보이며, 의사·영양사의 진단이나 처방을 대신하지 않습니다. 질환, 임신, 식이 제한이 있다면 전문가와 상담하세요.</p></div>
     <div className="footer-bottom">
-      <span>© {new Date().getFullYear()} vitapick · 운영 및 개발 이오리 · 1인 풀스택 프로젝트</span>
+      <span>© {new Date().getFullYear()} vitapick · 개발 박미금 · 김모란 · 이오리(조장) · 홍기흥 · 4인 팀 프로젝트</span>
       <span className="credits">Photos by {PHOTOS.map(([, n, id], i) => <a key={id} href={`https://unsplash.com/photos/${id}`} target="_blank" rel="noopener">{n}{i < PHOTOS.length - 1 ? ', ' : ''}</a>)} on Unsplash</span>
       <button className="top-button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="맨 위로 이동"><Icon icon={faArrowUp} /></button>
     </div>

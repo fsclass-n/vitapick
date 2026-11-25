@@ -72,7 +72,7 @@ doc = f"""# carepick 10분 발표·시연 영상 — 대본 및 연출 가이드
 | 항목 | 내용 |
 | --- | --- |
 | 파일 | `docs/video/carepick_final.mp4` (10:00, 1920×1080, 30fps, H.264 + AAC 스테레오) |
-| 발표자 | 이오리 (1인 풀스택) — 합성 음성 `{v.VOICE}`, 속도 {v.RATE}, 문장 사이 {v.GAP}초 쉼 |
+| 발표자 | 이오리 (팀 조장) — 합성 음성 `{v.VOICE}`, 속도 {v.RATE}, 문장 사이 {v.GAP}초 쉼 |
 | 시연 | 운영 사이트 `vitapick.onrender.com`의 **공용 테스트 계정 2개(일반 사용자 / 관리자)** 비교 |
 | 장면 | {len(scenes)}개 · 실제 말하는 시간 {speech:.0f}초 / {v.TOTAL}초 |
 | 자막 | 화면 하단 자막 + `docs/video/carepick_final.srt` |
