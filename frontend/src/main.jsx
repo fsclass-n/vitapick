@@ -22,12 +22,22 @@ const navItems = [
 const today = () => new Date().toLocaleDateString('sv-SE')
 const formatNumber = (number) => Number(number || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 })
 
+function Logo() {
+  return <svg className="logo-mark" viewBox="0 0 64 64" aria-hidden="true">
+    <rect width="64" height="64" rx="18" className="logo-bg" />
+    <g fill="none" strokeWidth="6" strokeLinecap="round" transform="rotate(-90 32 32)">
+      <circle cx="32" cy="32" r="19" stroke="#f2b45c" strokeDasharray="56 120" />
+      <circle cx="32" cy="32" r="19" stroke="#ef7d63" strokeDasharray="20 120" strokeDashoffset="-62" />
+      <circle cx="32" cy="32" r="19" stroke="#7cc8a8" strokeDasharray="31 120" strokeDashoffset="-88" />
+    </g>
+    <path d="M24.5 33.5l5.2 5.2c5.8-9.6 10.3-12.6 13.8-13.8-6.6 1.2-10.6 4.7-13.8 8.4l-5.2-5z" fill="#fff" />
+  </svg>
+}
 function Brand({ light = false }) {
   return <Link to="/" className={`brand ${light ? 'brand-light' : ''}`} aria-label="케어픽 홈">
-    <span className="brand-mark"><Icon icon={faLeaf} /></span><span>carepick<span className="brand-dot">.</span></span>
+    <Logo /><span className="brand-word">care<b>pick</b></span>
   </Link>
 }
-
 function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('carepick_token'))
   const [user, setUser] = useState(null)
@@ -114,50 +124,57 @@ function App() {
         <div><Brand light /><p>오늘의 작은 선택이<br />내일의 건강을 만듭니다.</p></div>
         <div className="footer-right"><span>공공데이터를 바탕으로, 나를 위한 건강한 기록</span><button className="top-button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="맨 위로 이동"><Icon icon={faArrowUp} /></button></div>
       </div>
-      <div className="footer-bottom">© {new Date().getFullYear()} carepick. Made for better everyday choices. <span>본 서비스는 의료 진단을 대신하지 않습니다.</span></div>
+      <div className="footer-bottom"><span>© {new Date().getFullYear()} carepick · 본 서비스는 의료 진단을 대신하지 않습니다.</span><span className="credits">Photos: {PHOTOS.map(([, n, id], i) => <a key={id} href={`https://unsplash.com/photos/${id}`} target="_blank" rel="noopener">{n}{i < PHOTOS.length - 1 ? ", " : ""}</a>)} on Unsplash</span></div>
     </footer>
   </>
 }
 
+const PHOTOS = [
+  ['hero-bowl.jpg', 'Anna Pelzer', 'IGfIGP5ONV0'], ['colorful-bowl.jpg', 'Metin Ozer', 'Dmhjy9fDTKw'],
+  ['avocado-bowl.jpg', 'Hermes Rivera', 'OzBLe_Eg1mg'], ['green-salad.jpg', 'sina piryae', 'bBzjWthTqb8'], ['salad-table.jpg', 'Roland Suciu', 'LlvSGfe0oSQ'],
+]
 function Home() {
   return <>
     <section className="hero">
-      <div className="hero-grain" />
       <div className="container hero-grid">
         <div className="hero-copy">
-          <div className="hero-badge"><span className="badge-spark">✳</span> THE BETTER WAY TO WELLNESS</div>
-          <h1>건강한 하루는<br /><em>나를 아는 것</em>에서<br />시작됩니다.</h1>
-          <p>식단을 기록하고, 영양의 균형을 발견하세요.<br />복잡한 숫자 대신 나에게 필요한 이야기를 전합니다.</p>
-          <div className="hero-actions"><Link className="button button-dark button-large" to="/login?mode=register">나의 건강 여정 시작하기 <Icon icon={faArrowRight} /></Link><a className="hero-link" href="#how">어떻게 사용하나요? <Icon icon={faChevronRight} /></a></div>
-          <div className="hero-proof"><div className="proof-icon"><Icon icon={faShieldHeart} /></div><span>공공데이터 기반의 믿을 수 있는 영양 정보</span></div>
+          <span className="hero-badge"><i /> 공공데이터 1,095개 식품 · 개인 맞춤 영양 목표</span>
+          <h1>오늘의 접시를<br /><em>나에게 맞게</em> 고르다.</h1>
+          <p>먹은 음식을 검색해 기록하면, 나이·키·몸무게·활동량으로 계산한 나만의 목표와 비교해 탄수화물·단백질·지방의 균형을 한눈에 보여 드립니다.</p>
+          <div className="hero-actions"><Link className="button button-dark button-large" to="/login?mode=register">나의 접시 시작하기 <Icon icon={faArrowRight} /></Link><a className="hero-link" href="#how">어떻게 계산하나요? <Icon icon={faChevronRight} /></a></div>
+          <ul className="hero-legend"><li><i className="dot carbs" />탄수화물 50%</li><li><i className="dot protein" />단백질 20%</li><li><i className="dot fat" />지방 30%</li></ul>
         </div>
-        <div className="hero-visual" aria-label="케어픽 영양 대시보드 미리보기">
-          <div className="visual-orbit orbit-one" /><div className="visual-orbit orbit-two" />
-          <div className="hero-visual-card">
-            <div className="preview-top"><span>MONDAY, A FRESH START</span><Icon icon={faLeaf} /></div>
-            <div className="preview-center"><span className="small-overline">TODAY'S BALANCE</span><div className="preview-ring"><div><strong>78<span>%</span></strong><small>좋은 균형이에요!</small></div></div><p>조금씩 쌓이는 건강한 습관,<br />오늘도 잘하고 있어요.</p></div>
-            <div className="preview-bars"><div><i className="bar-dot green" />단백질 <b>42g</b><span><i style={{ width: '76%' }} /></span></div><div><i className="bar-dot orange" />탄수화물 <b>184g</b><span><i style={{ width: '66%' }} /></span></div><div><i className="bar-dot blue" />지방 <b>47g</b><span><i style={{ width: '67%' }} /></span></div></div>
-          </div>
-          <div className="floating-note"><span><Icon icon={faCheck} /></span><div><strong>오늘의 식단 기록 완료</strong><small>건강한 습관 +1</small></div></div>
-          <div className="visual-caption">A LITTLE BETTER, EVERY DAY.</div>
+        <div className="hero-plate" aria-label="영양 균형 접시 예시">
+          <div className="plate-ring"><svg viewBox="0 0 200 200" aria-hidden="true"><g fill="none" strokeWidth="9" strokeLinecap="round" transform="rotate(-90 100 100)">
+            <circle cx="100" cy="100" r="94" stroke="#f2b45c" strokeDasharray="286 591" />
+            <circle cx="100" cy="100" r="94" stroke="#ef7d63" strokeDasharray="108 591" strokeDashoffset="-298" />
+            <circle cx="100" cy="100" r="94" stroke="#7cc8a8" strokeDasharray="166 591" strokeDashoffset="-418" /></g></svg></div>
+          <img src="/images/hero-bowl.jpg" alt="채소와 곡물이 담긴 샐러드 볼" className="plate-photo" />
+          <div className="plate-chip chip-kcal"><strong>1,820</strong><span>kcal · 하루 목표</span></div>
+          <div className="plate-chip chip-macro"><span><i className="dot carbs" />탄 228g</span><span><i className="dot protein" />단 91g</span><span><i className="dot fat" />지 61g</span></div>
+          <div className="plate-chip chip-note"><Icon icon={faCheck} /> 30세 · 165cm · 60kg · 가벼운 활동 예시</div>
         </div>
       </div>
-      <div className="hero-bottom-line"><span>01 / 03</span><span>SCROLL TO EXPLORE ↓</span></div>
     </section>
+    <section className="strip" aria-hidden="true"><div className="strip-track">{[...PHOTOS, ...PHOTOS].map(([f], i) => <img key={i} src={`/images/${f}`} alt="" loading="lazy" />)}</div></section>
     <section className="features section-pad" id="features">
       <div className="container">
-        <div className="section-heading"><div><span className="eyebrow">WHY CAREPICK</span><h2>건강 관리,<br /><em>더 단순하고 다정하게.</em></h2></div><p>하루의 기록부터 나에게 맞는 영양 인사이트까지.<br />내 몸을 이해하는 시간을 만들어 드립니다.</p></div>
+        <div className="section-heading"><span className="eyebrow">WHY CAREPICK</span><h2>기록은 가볍게, 목표는 <em>나에게 맞게.</em></h2></div>
         <div className="feature-grid">
-          <div className="feature-card"><div className="feature-icon orange-bg"><Icon icon={faUtensils} /></div><span className="feature-number">01 / RECORD</span><h3>가볍게 기록하고</h3><p>오늘 먹은 음식을 간편하게 남기고<br />하루의 식습관을 한눈에 살펴보세요.</p><div className="feature-decoration decor-one"><Icon icon={faUtensils} /></div></div>
-          <div className="feature-card"><div className="feature-icon green-bg"><Icon icon={faChartSimple} /></div><span className="feature-number">02 / DISCOVER</span><h3>명확하게 이해하고</h3><p>열량과 주요 영양소의 섭취 현황을<br />직관적인 리포트로 확인하세요.</p><div className="feature-decoration decor-two"><Icon icon={faChartSimple} /></div></div>
-          <div className="feature-card"><div className="feature-icon blue-bg"><Icon icon={faHeartPulse} /></div><span className="feature-number">03 / GROW</span><h3>건강하게 나아가고</h3><p>공공데이터를 참고한 피드백으로<br />매일 조금씩 더 좋은 선택을 해보세요.</p><div className="feature-decoration decor-three"><Icon icon={faHeartPulse} /></div></div>
+          <article className="feature-card fc-carbs"><img src="/images/colorful-bowl.jpg" alt="" loading="lazy" /><div><span className="feature-num">01 · RECORD</span><h3>검색하면 채워지는 영양값</h3><p>음식 이름 두 글자면 공공데이터에서 찾아 100g 기준 영양값을 자동으로 채웁니다.</p></div></article>
+          <article className="feature-card fc-protein"><img src="/images/avocado-bowl.jpg" alt="" loading="lazy" /><div><span className="feature-num">02 · TARGET</span><h3>나만의 하루 목표</h3><p>Mifflin-St Jeor 공식과 활동량으로 하루 열량과 3대 영양소 목표를 계산합니다.</p></div></article>
+          <article className="feature-card fc-fat"><img src="/images/green-salad.jpg" alt="" loading="lazy" /><div><span className="feature-num">03 · BALANCE</span><h3>한눈에 보는 균형</h3><p>목표 대비 오늘의 진행률과 최근 7일 열량 흐름을 리포트로 보여 줍니다.</p></div></article>
         </div>
       </div>
     </section>
-    <section className="how-section section-pad" id="how"><div className="container how-grid"><div className="how-art"><div className="how-circle"><Icon icon={faLeaf} /></div><div className="how-mini"><Icon icon={faCheck} /> 오늘도 나를 돌보는 중</div></div><div><span className="eyebrow">SMALL STEPS, BIG CHANGE</span><h2>완벽한 식단보다<br /><em>꾸준한 한 걸음.</em></h2><p>어제보다 조금 더 나은 선택을 할 수 있도록, 케어픽이 곁에서 함께합니다.</p><Link className="button button-light" to="/login">지금 시작하기 <Icon icon={faArrowRight} /></Link></div></div></section>
+    <section className="how-section section-pad" id="how"><div className="container how-grid">
+      <div className="how-photo"><img src="/images/salad-table.jpg" alt="식탁 위 샐러드" loading="lazy" /></div>
+      <div><span className="eyebrow">HOW IT WORKS</span><h2>세 단계면 <em>나의 접시</em>가 완성됩니다.</h2>
+        <ol className="how-steps"><li><b>1</b><div><strong>프로필 입력</strong><span>나이 · 키 · 몸무게 · 활동량</span></div></li><li><b>2</b><div><strong>식단 기록</strong><span>공공데이터 검색으로 영양값 자동 입력</span></div></li><li><b>3</b><div><strong>균형 확인</strong><span>목표 대비 진행률 · 최근 7일 리포트</span></div></li></ol>
+        <Link className="button button-dark" to="/login">지금 시작하기 <Icon icon={faArrowRight} /></Link></div>
+    </div></section>
   </>
 }
-
 function Login({ onLogin }) {
   const location = useLocation()
   const [mode, setMode] = useState(new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login')
@@ -200,7 +217,7 @@ function Login({ onLogin }) {
   return <div className="auth-layout">
     <div className="auth-brand-panel">
       <div className="auth-panel-inner"><span className="eyebrow">A BETTER YOU STARTS HERE</span><h1>나를 돌보는<br />가장 좋은 방법,<br /><em>오늘부터.</em></h1><p>하루의 식탁에서 시작하는 건강한 변화.<br />당신의 모든 선택을 케어픽이 응원합니다.</p></div>
-      <div className="auth-panel-art"><div className="auth-art-circle"><Icon icon={faHeartPulse} /></div><span className="auth-art-label">CARE FOR YOURSELF, EVERY DAY</span></div>
+      <div className="auth-panel-art"><img src="/images/colorful-bowl.jpg" alt="" /><span className="auth-art-label"><i className="dot carbs" /><i className="dot protein" /><i className="dot fat" /> 나에게 맞는 접시</span></div>
       <div className="auth-panel-footer"><Icon icon={faLeaf} /> SMALL STEPS. BETTER DAYS.</div>
     </div>
     <div className="auth-form-panel"><div className="auth-form-wrap">
