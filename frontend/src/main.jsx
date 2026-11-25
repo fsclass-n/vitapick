@@ -55,8 +55,8 @@ function Logo() {
   </svg>
 }
 function Brand({ light = false }) {
-  return <Link to="/" className={`brand ${light ? 'brand-light' : ''}`} aria-label="케어픽 홈">
-    <Logo /><span className="brand-text"><span className="brand-word">care<b>pick</b></span><small>HEALTH · NUTRITION</small></span>
+  return <Link to="/" className={`brand ${light ? 'brand-light' : ''}`} aria-label="비타픽 홈">
+    <Logo /><span className="brand-text"><span className="brand-word">vita<b>pick</b></span><small>HEALTH · NUTRITION</small></span>
   </Link>
 }
 function Pulse({ className = '' }) {

@@ -1,4 +1,4 @@
-"""Single source of truth for the carepick 10-minute video: timing, narration, captions, overlays.
+"""Single source of truth for the vitapick 10-minute video: timing, narration, captions, overlays.
 
 Each sentence is S(say, caption). `say` is what the voice reads (English terms spelled the way
 they should be pronounced); `caption` is the on-screen subtitle and defaults to `say`.
@@ -25,8 +25,8 @@ SCENES = [
     # ---------------- ① PPT 00:00-03:00 (slides 1-14) ----------------
     dict(id='p01', part=PPT, slide=1, dur=10, lines=[
         S('안녕하세요, 1인 풀스택 개발자 이오리입니다.'),
-        S('공공데이터로 식단을 분석하는 헬스케어 서비스, 케어픽을 소개합니다.',
-          '공공데이터로 식단을 분석하는 헬스케어 서비스, carepick을 소개합니다.')],
+        S('공공데이터로 식단을 분석하는 헬스케어 서비스, 비타픽을 소개합니다.',
+          '공공데이터로 식단을 분석하는 헬스케어 서비스, vitapick을 소개합니다.')],
         hl=[(1, (0.7, 1.45, 4.6, 2.6))]),
     dict(id='p02', part=PPT, slide=2, dur=12, lines=[
         S('식단 관리가 어려운 이유는 세 가지입니다.'),
@@ -34,7 +34,7 @@ SCENES = [
         hl=[(1, (0.6, 1.85, 12.15, 3.3))]),
     dict(id='p03', part=PPT, slide=3, dur=11, lines=[
         S('그래서 데이터는 자동으로 모으고, 목표는 사람마다 계산하고, 결과는 한눈에 보여 줍니다.'),
-        S('이 세 가지가 케어픽의 핵심입니다.', '이 세 가지가 carepick의 핵심입니다.')],
+        S('이 세 가지가 비타픽의 핵심입니다.', '이 세 가지가 vitapick의 핵심입니다.')],
         hl=[(0, (0.6, 1.85, 12.15, 4.35))]),
     dict(id='p04', part=PPT, slide=4, dur=15, lines=[
         S('화면은 리액트로 만들어 넷리파이와 렌더에 올렸고, 서버는 패스트 에이피아이, 데이터는 타이디비에 저장합니다.',
@@ -92,7 +92,7 @@ SCENES = [
 
     # ---------------- ② general user 03:00-06:15 ----------------
     dict(id='d01', part=USER, web='site', dur=14, xfade=0.6, lines=[
-        S('지금부터 실제 운영 중인 케어픽입니다.', '지금부터 실제 운영 중인 carepick입니다.'),
+        S('지금부터 실제 운영 중인 비타픽입니다.', '지금부터 실제 운영 중인 vitapick입니다.'),
         S('렌더에 배포된 주소로, 실제 서버와 데이터베이스에 연결되어 있습니다.',
           'Render에 배포된 주소로, 실제 서버와 데이터베이스에 연결되어 있습니다.')],
         tags=[(0, '실제 운영 서버 · vitapick.onrender.com')]),
@@ -188,8 +188,8 @@ SCENES = [
         S('다음 단계로, 바뀐 데이터만 가져오는 증분 동기화를 넣겠습니다.')],
         hl=[(1, (0.6, 1.8, 1.95, 4.95)), (2, (2.7, 1.8, 1.95, 4.95)), (4, (7.1, 2.25, 5.65, 1.4))]),
     dict(id='c16', part=CLOSE, slide=16, dur=28, lines=[
-        S('케어픽은 식단 기록을 넘어, 나에게 맞는 영양 목표까지 함께 보여 주는 서비스입니다.',
-          'carepick은 식단 기록을 넘어, 나에게 맞는 영양 목표까지 함께 보여 주는 서비스입니다.'),
+        S('비타픽은 식단 기록을 넘어, 나에게 맞는 영양 목표까지 함께 보여 주는 서비스입니다.',
+          'vitapick은 식단 기록을 넘어, 나에게 맞는 영양 목표까지 함께 보여 주는 서비스입니다.'),
         S('핵심은 세 가지입니다. 공식 데이터 우선, 서버가 지키는 권한, 끝까지 확인하는 배포입니다.'),
         S('로그인 화면의 테스트 계정 버튼으로 직접 체험해 보실 수 있습니다.'),
         S('시청해 주셔서 감사합니다.')],

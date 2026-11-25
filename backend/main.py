@@ -454,7 +454,7 @@ async def oauth_callback(provider: str, request: Request, code: str = "", state:
         if not user:
             if db.scalar(select(User).where(User.email == email)):
                 return failure  # Never silently link accounts by email.
-            user = User(email=email, name=(name or "케어픽 사용자")[:80], provider=provider, provider_id=str(provider_id))
+            user = User(email=email, name=(name or "비타픽 사용자")[:80], provider=provider, provider_id=str(provider_id))
             db.add(user)
             db.commit()
             db.refresh(user)
