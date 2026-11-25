@@ -1,9 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="18" fill="#12332a"/>
-  <g fill="none" stroke-width="6" stroke-linecap="round" transform="rotate(-90 32 32)">
-    <circle cx="32" cy="32" r="19" stroke="#f2b45c" stroke-dasharray="56 120" stroke-dashoffset="0"/>
-    <circle cx="32" cy="32" r="19" stroke="#ef7d63" stroke-dasharray="20 120" stroke-dashoffset="-62"/>
-    <circle cx="32" cy="32" r="19" stroke="#7cc8a8" stroke-dasharray="31 120" stroke-dashoffset="-88"/>
-  </g>
-  <path d="M24.5 33.5l5.2 5.2c5.8-9.6 10.3-12.6 13.8-13.8-6.6 1.2-10.6 4.7-13.8 8.4l-5.2-5z" fill="#ffffff"/>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14a08f"/><stop offset="1" stop-color="#0b5c57"/></linearGradient></defs>
+  <rect width="64" height="64" rx="18" fill="url(#g)"/>
+  <path d="M32 50C15.5 39.5 10.5 30.5 13.6 22.6 16.8 14.6 27 13.6 32 21.2 37 13.6 47.2 14.6 50.4 22.6 53.5 30.5 48.5 39.5 32 50Z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M14 32.5h9l3.4-6.5 5 13 4.4-17 3.6 10.5H50" fill="none" stroke="#a8f0dc" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M45 15.5c.3-5.6 4.4-8.6 10-8.5-.1 5.6-3.9 8.8-10 8.5Z" fill="#a8f0dc"/>
 </svg>

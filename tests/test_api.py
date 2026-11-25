@@ -8,7 +8,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from backend.db import Base, get_db
-from backend import main
+import json
+
+from backend import main, meal_parser
 from backend.main import app
 from backend.models import Food, OAuthTicket, User, utc_now
 
@@ -199,7 +201,7 @@ def test_invalid_admin_password_skips_bootstrap_without_crashing(monkeypatch):
     engine.dispose()
 
 
-def test_demo_accounts_work_in_production_with_limited_admin_powers(client, monkeypatch):
+def test_demo_accounts_work_in_production_and_demo_admin_is_read_only(client, monkeypatch):
     web, session = client
     monkeypatch.setattr(main, "env", "production")
     monkeypatch.setattr(main, "demo_enabled", False)
@@ -215,30 +217,99 @@ def test_demo_accounts_work_in_production_with_limited_admin_powers(client, monk
     demo_user = web.post("/api/auth/demo-login", json={"role": "user"}).json()
     demo_admin_login = web.post("/api/auth/demo-login", json={"role": "admin"}).json()
     assert demo_user["user"]["role"] == "user" and demo_user["user"]["is_demo"] is True
-    assert demo_admin_login["user"]["role"] == "admin"
+    assert demo_admin_login["user"]["role"] == "viewer"
     demo_admin = {"Authorization": f'Bearer {demo_admin_login["access_token"]}'}
 
+    # 테스트 관리자 can read the console with real members masked, but cannot change any role.
     listed = {u["id"]: u for u in web.get("/api/admin/users", headers=demo_admin).json()}
     person = next(u for u in listed.values() if not u["is_demo"])
     assert person["email"] == "re********@example.com" and person["name"] == "테**"
-    assert web.patch(f'/api/admin/users/{person["id"]}/role', headers=demo_admin, json={"role": "user"}).status_code == 403
-    changed = web.patch(f'/api/admin/users/{demo_user["user"]["id"]}/role', headers=demo_admin, json={"role": "admin"})
-    assert changed.status_code == 200 and changed.json()["role"] == "admin"
+    for target in (person["id"], demo_user["user"]["id"]):
+        denied = web.patch(f"/api/admin/users/{target}/role", headers=demo_admin, json={"role": "admin"})
+        assert denied.status_code == 403 and "읽기 전용" in denied.json()["detail"]
 
-    # Real admins still see real data, and the demo admin never counts as the last real admin.
+    # Real admins see real data and can grant all three roles.
     assert any(u["email"] == "realperson@example.com" for u in web.get("/api/admin/users", headers=real).json())
-    real_id = next(u["id"] for u in listed.values() if not u["is_demo"])
-    other = register(web, "second@example.com")
+    member = register(web, "member@example.com")
     with session() as db:
-        db.query(User).filter_by(email="second@example.com").one().role = "admin"
-        db.commit()
-    assert web.patch(f"/api/admin/users/{real_id}/role", headers=other, json={"role": "user"}).status_code == 200
-    with session() as db:
-        last_id = db.query(User).filter_by(email="second@example.com").one().id
-    assert web.patch(f"/api/admin/users/{last_id}/role", headers=demo_admin, json={"role": "user"}).status_code == 403
+        member_id = db.query(User).filter_by(email="member@example.com").one().id
+    assert web.patch(f"/api/admin/users/{member_id}/role", headers=real, json={"role": "viewer"}).json()["role"] == "viewer"
+    assert web.get("/api/admin/users", headers=member).status_code == 200
+    assert web.patch(f"/api/admin/users/{member_id}/role", headers=member, json={"role": "admin"}).status_code == 403
+    assert web.patch(f"/api/admin/users/{member_id}/role", headers=real, json={"role": "owner"}).status_code == 422
 
-    # Demo admin stays an admin even if it was demoted.
+    # Demo admin is restored to read-only even if someone promoted it.
     with session() as db:
-        db.query(User).filter_by(email="demo-admin@carepick.local").one().role = "user"
+        db.query(User).filter_by(email="demo-admin@carepick.local").one().role = "admin"
         db.commit()
-    assert web.post("/api/auth/demo-login", json={"role": "admin"}).json()["user"]["role"] == "admin"
+    assert web.post("/api/auth/demo-login", json={"role": "admin"}).json()["user"]["role"] == "viewer"
+
+
+def add_foods(session):
+    with session() as db:
+        db.add_all([
+            Food(source_id="F1", name="현미밥", calories=150, protein=3.0, carbs=32.0, fat=1.0),
+            Food(source_id="F2", name="샐러드_닭가슴살", calories=90, protein=12.0, carbs=4.0, fat=3.0),
+            Food(source_id="F3", name="토스트_누텔라 바나나 토스트", calories=300, protein=6.0, carbs=40.0, fat=12.0),
+        ])
+        db.commit()
+
+
+def test_meal_sentence_is_split_and_nutrients_come_from_food_db(client, monkeypatch):
+    web, session = client
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    add_foods(session)
+    headers = register(web, "parser@example.com")
+    assert web.get("/api/meals/parse/status").json() == {"ai": False, "engine": "rules"}
+    result = web.post("/api/meals/parse", headers=headers, json={
+        "text": "어제 점심에 현미밥 한 공기랑 닭가슴살 샐러드 먹고 바나나 하나", "today": "2026-11-25", "hour": 9}).json()
+    assert result["engine"] == "rules"
+    rice, salad, banana = result["items"]
+    assert (rice["food_name"], rice["meal_type"], rice["eaten_at"], rice["serving_g"], rice["match"]) == ("현미밥", "점심", "2026-11-24", 210, "exact")
+    assert rice["nutrients"] == {"calories": 315.0, "protein": 6.3, "carbs": 67.2, "fat": 2.1}
+    assert salad["food_name"] == "샐러드_닭가슴살" and salad["serving_estimated"] is True and salad["nutrients"]["protein"] == 24.0
+    # A loosely related dish is only offered as a suggestion, never auto-filled.
+    assert banana["match"] == "none" and banana["nutrients"] is None and banana["candidates"]
+    assert banana["serving_g"] == 120
+    assert web.post("/api/meals/parse", headers=headers, json={"text": "음"}).status_code == 422
+    assert web.post("/api/meals/parse", json={"text": "현미밥 한 공기"}).status_code == 401
+
+
+def test_gemini_structures_the_sentence_and_falls_back_to_rules(client, monkeypatch):
+    web, session = client
+    add_foods(session)
+    headers = register(web, "gemini@example.com")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    calls = []
+
+    class Reply:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self.payload
+
+    def fake_post(url, headers, timeout, **kwargs):
+        calls.append((url, headers, kwargs["json"]))
+        items = [{"food_name": "현미밥", "meal_type": "저녁", "eaten_at": "2026-11-23", "serving_g": 105,
+                  "serving_estimated": False, "keywords": ["현미밥"], "calories": 9999}]
+        return Reply({"candidates": [{"content": {"parts": [{"text": json.dumps({"items": items})}]}}]})
+
+    monkeypatch.setattr(meal_parser.httpx, "post", fake_post)
+    result = web.post("/api/meals/parse", headers=headers, json={"text": "그제 저녁 현미밥 반 공기", "today": "2026-11-25", "hour": 20}).json()
+    url, sent_headers, body = calls[0]
+    assert ":generateContent" in url and sent_headers == {"x-goog-api-key": "test-key"}
+    assert body["generationConfig"]["responseMimeType"] == "application/json"
+    item = result["items"][0]
+    assert result["engine"] == "gemini" and (item["meal_type"], item["eaten_at"], item["serving_g"]) == ("저녁", "2026-11-23", 105)
+    assert item["nutrients"]["calories"] == 157.5  # from the DB, not the model's 9999
+
+    def broken_post(*args, **kwargs):
+        raise meal_parser.httpx.ConnectError("down")
+
+    monkeypatch.setattr(meal_parser.httpx, "post", broken_post)
+    fallback = web.post("/api/meals/parse", headers=headers, json={"text": "현미밥 한 공기", "today": "2026-11-25", "hour": 12}).json()
+    assert fallback["engine"] == "rules" and fallback["items"][0]["serving_g"] == 210

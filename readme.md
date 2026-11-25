@@ -16,7 +16,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Render-2496ED?logo=docker&logoColor=white)](Dockerfile)
 
 [![Food data sync](https://img.shields.io/github/actions/workflow/status/fsclass-n/carepick/sync-foods.yml?label=food%20data%20sync&logo=githubactions&logoColor=white)](https://github.com/fsclass-n/carepick/actions/workflows/sync-foods.yml)
-[![Tests](https://img.shields.io/badge/backend_tests-10_passed-2ea44f?logo=pytest&logoColor=white)](tests/test_api.py)
+[![Tests](https://img.shields.io/badge/backend_tests-12_passed-2ea44f?logo=pytest&logoColor=white)](tests/test_api.py)
 [![Render](https://img.shields.io/badge/API-Render-46E3B7?logo=render&logoColor=black)](https://carepick-api.onrender.com/docs)
 [![Netlify](https://img.shields.io/badge/Frontend-Netlify-00C7B7?logo=netlify&logoColor=white)](https://carepick.netlify.app)
 [![Repo size](https://img.shields.io/github/repo-size/fsclass-n/carepick?color=3f7455)](https://github.com/fsclass-n/carepick)
@@ -36,17 +36,18 @@
 | 지표 | 값 | 근거 |
 | --- | --- | --- |
 | 공공데이터 식품 적재 | **1,095개** (원본 5,000행 정제) | `rpa/sync_foods.py` · TiDB `foods` |
-| API 엔드포인트 | **18개** (인증 · 영양 · 식단 · 식품 · 관리자 · OAuth) | `backend/main.py` |
-| 백엔드 자동 테스트 | **10개 통과** | `tests/test_api.py` |
+| API 엔드포인트 | **20개** (인증 · 영양 · 식단 · AI 문장 분석 · 식품 · 관리자 · OAuth) | `backend/main.py` |
+| 백엔드 자동 테스트 | **12개 통과** | `tests/test_api.py` |
 | 배포 | **분리 배포 3곳** — Netlify · Render(Docker) · GitHub Actions(배치) | `netlify.toml` · `render.yaml` · `.github/workflows/` |
 
 ## 핵심 기능
 
 - **공공데이터 자동 동기화** — 식품의약품안전처 식품영양성분DB API를 GitHub Actions가 매주 수집해 100g 기준으로 정제·적재합니다.
-- **식단 기록** — 음식 이름 2글자 이상 입력 시 공공데이터를 검색(300ms 디바운스)하고, 선택하면 영양값이 자동으로 채워집니다.
+- **AI 문장 식단 기록** — "어제 점심에 현미밥 한 공기랑 된장찌개 먹었어"처럼 적으면 Gemini(키가 없거나 실패하면 내장 한국어 규칙 분석기)가 음식·식사 구분·날짜·섭취량으로 나눕니다. 열량·단백질·탄수화물·지방은 AI가 만들지 않고 공공데이터 100g 기준값 × 섭취량으로 서버가 계산합니다.
+- **직접 입력** — 음식 이름 2글자 이상 입력 시 공공데이터를 검색(300ms 디바운스)하고, 선택하면 섭취량에 맞춰 영양값이 자동 계산됩니다.
 - **개인 맞춤 영양 목표** — 나이·성별·키·몸무게·활동량으로 Mifflin-St Jeor 기초대사량 → 하루 열량 → 탄·단·지 목표를 계산합니다.
 - **영양 리포트** — 목표 대비 오늘의 진행률, 최근 7일 열량 차트, 섭취 상태에 따른 안내 문구를 제공합니다.
-- **역할 기반 권한(RBAC)** — 일반 사용자 / 관리자 메뉴와 API를 서버에서 분리하고, 공용 테스트 관리자는 실제 회원 정보를 가려 보여 줍니다.
+- **역할 기반 권한(RBAC)** — 일반 사용자 / 관리자 / 테스트 관리자(읽기 전용) 3단계 권한을 서버에서 분리합니다. 테스트 관리자는 회원 목록만 볼 수 있고(실제 회원 정보는 마스킹) 권한 변경은 서버가 `403`으로 막습니다.
 - **인증** — 이메일(Argon2 · 비밀번호 정책), Google · Naver · Kakao OAuth, 원클릭 테스트 계정.
 
 > 영양 목표는 추정치이며 의료적 진단·처방을 대신하지 않습니다.
@@ -138,7 +139,7 @@ with SessionLocal() as db:
 ### 4. 권한과 계정 보안 — 화면이 아니라 서버가 막는다
 
 - **RBAC**: 모든 관리자 API가 토큰의 역할을 다시 검사합니다. 일반 사용자의 관리자 API 호출은 `403`, `/admin` 화면 접근은 "관리자 전용 화면"으로 안내합니다.
-- **공용 테스트 관리자**: 누구나 버튼 하나로 관리자가 될 수 있으므로 실제 회원의 이름·이메일은 **마스킹**하고, 권한 변경은 테스트 계정끼리만 허용합니다. 실제 회원 변경 시 서버가 `403`을 반환합니다(운영 환경에서 검증).
+- **공용 테스트 관리자**: 누구나 버튼 하나로 들어올 수 있으므로 읽기 전용 권한(`viewer`)으로만 로그인됩니다. 실제 회원의 이름·이메일은 **마스킹**하고, 모든 권한 변경 요청에 서버가 `403`을 반환합니다. 누군가 이 계정을 관리자로 올려도 다음 로그인 때 읽기 전용으로 되돌립니다.
 - **관리자 소실 방지**: 본인 권한 변경과 마지막 실제 관리자 강등을 차단합니다.
 - **OAuth**: `state` 쿠키(HttpOnly)로 CSRF를 막고, 토큰을 URL에 노출하지 않도록 **2분짜리 일회용 교환 코드**(DB에는 SHA-256 해시만 저장)를 씁니다. 검증된 이메일만 허용하고, 같은 이메일이라도 기존 계정에 **자동 연결하지 않습니다**(계정 탈취 방지).
 - **안전한 기본값**: 운영에서 `JWT_SECRET`·`DATABASE_URL`이 없으면 서버가 기동을 거부합니다.
@@ -158,7 +159,7 @@ with SessionLocal() as db:
 
 | 영역 | 기술 | 선택 이유 |
 | --- | --- | --- |
-| **Backend** | Python 3.11 · FastAPI · Pydantic · SQLAlchemy 2.0 · Argon2 · PyJWT · httpx | 요청 검증을 타입으로 선언(범위·NaN 차단), 바인딩 파라미터로 SQL 인젝션 차단, 메모리 하드 해시 |
+| **Backend** | Python 3.11 · FastAPI · Pydantic · SQLAlchemy 2.0 · Argon2 · PyJWT · httpx · Gemini API (구조화 출력) | 요청 검증을 타입으로 선언(범위·NaN 차단), 바인딩 파라미터로 SQL 인젝션 차단, 메모리 하드 해시 |
 | **Frontend** | React 19 · Vite 7 · React Router 7 · Tailwind CSS v4 · FontAwesome | SSR이 필요 없어 정적 호스팅만으로 배포, 반응형 드로어·접근성(`inert`, reduced motion) 직접 제어 |
 | **Data / Batch** | requests · 공공데이터포털 식품영양성분DB API · GitHub Actions | 공식 API 우선, 서비스와 분리된 주간 배치 |
 | **Database** | TiDB Cloud (MySQL 호환) · 테스트는 인메모리 SQLite | 개발·운영 같은 DB 엔진으로 환경 차이 제거, 테스트는 운영 데이터와 완전 격리 |
@@ -175,8 +176,9 @@ with SessionLocal() as db:
 | OAuth | `GET /auth/oauth/providers` · `GET /auth/oauth/{provider}/start` · `GET /auth/oauth/{provider}/callback` · `POST /auth/oauth/exchange` | 공개 |
 | Nutrition | `GET /nutrition/targets` · `PATCH /nutrition/profile` | 로그인 |
 | Meals | `GET /meals` · `POST /meals` · `DELETE /meals/{meal_id}` | 로그인 · **본인 기록만** |
+| AI 문장 분석 | `POST /meals/parse` (2~300자, 사용자당 10분 20회) · `GET /meals/parse/status` | 로그인 / 공개 |
 | Foods | `GET /foods?q=` (2~80자, LIKE 와일드카드 이스케이프) | 공개 |
-| Admin | `GET /admin/users` · `PATCH /admin/users/{user_id}/role` | **관리자** (테스트 관리자는 제한) |
+| Admin | `GET /admin/users` · `PATCH /admin/users/{user_id}/role` (`user` · `viewer` · `admin`) | 조회: 관리자·테스트 관리자 / 변경: **관리자만** |
 
 ## Directory Structure
 
@@ -184,17 +186,18 @@ with SessionLocal() as db:
 carepick/
 ├── backend/                 # FastAPI 서버
 │   ├── main.py              # 라우트 · 인증/RBAC · OAuth · 영양 목표 계산
+│   ├── meal_parser.py       # 문장 → 식단 항목 (Gemini + 규칙 대체) · 식품 DB 매칭 · 영양 계산
 │   ├── models.py            # users · meals · foods · oauth_tickets
 │   └── db.py                # TiDB 연결 (TLS 인증서 검증) · 세션
 ├── frontend/                # React 19 + Vite SPA
 │   └── src/
-│       ├── main.jsx         # 홈 · 로그인 · 대시보드 · 식단 · 리포트 · 회원 관리
+│       ├── main.jsx         # 홈 · 로그인 · 대시보드 · AI 식단 기록 · 리포트 · 회원 관리 · 이용 안내
 │       ├── api.js           # API 클라이언트 (VITE_API_URL)
 │       └── style.css        # 디자인 토큰 · 반응형 · 드로어
 ├── rpa/
 │   └── sync_foods.py        # 공공데이터 Extract → Validate → Transform → Load
 ├── tests/
-│   └── test_api.py          # 백엔드 테스트 10개 (인메모리 SQLite)
+│   └── test_api.py          # 백엔드 테스트 12개 (인메모리 SQLite)
 ├── .github/workflows/
 │   └── sync-foods.yml       # 주간 공공데이터 동기화
 ├── docs/                    # 설계서 · 개발 기록 · 발표 자료 · 영상 · 포트폴리오 이미지
@@ -207,7 +210,7 @@ carepick/
 
 | 대상 | 검증 |
 | --- | --- |
-| 백엔드 | `pytest` 10개 — 비밀번호 정책, 타인 데이터 접근 차단, RBAC, OAuth 코드 일회성·만료, 영양 공식, 수집 응답 검증·멱등 upsert, 초기 관리자 설정 실패 처리, 테스트 관리자 제한, CORS |
+| 백엔드 | `pytest` 12개 — 비밀번호 정책, 타인 데이터 접근 차단, RBAC, OAuth 코드 일회성·만료, 영양 공식, 수집 응답 검증·멱등 upsert, 초기 관리자 설정 실패 처리, 테스트 관리자 읽기 전용, AI 문장 분석(규칙·Gemini·실패 대체, DB 기반 영양 계산), CORS |
 | 프런트엔드 | `npm run build` · 운영 화면 실제 클릭 녹화(Puppeteer)로 주요 흐름 확인 |
 | 운영 | 배포 후 헬스 체크 · CORS 사전 요청 · 운영 API와 DB 결과 대조 |
 
