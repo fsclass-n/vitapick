@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon as Icon } from '@fortawesome/react-fontawesome'
 import {
-  faAppleWhole, faArrowRight, faArrowUp, faArrowUpRightFromSquare, faBookMedical, faBowlRice, faCalculator, faCalendarDays, faChartPie,
-  faChartSimple, faCheck, faChevronRight, faCircleCheck, faCircleExclamation, faDatabase, faDroplet, faDrumstickBite, faEnvelope, faEye,
+  faAppleWhole, faArrowRight, faBolt, faCircleInfo, faRightToBracket, faArrowUp, faArrowUpRightFromSquare, faBookMedical, faBowlRice, faCalculator, faCalendarDays, faChartPie,
+  faChartSimple, faCheck, faChevronRight, faCircleCheck, faCircleExclamation, faDatabase, faDroplet, faDrumstickBite, faEnvelope, faEye, faEyeSlash,
   faFileShield, faFire, faHandHoldingMedical, faHeartPulse, faLock, faNotesMedical, faPenToSquare, faPlus, faServer, faShieldHeart,
   faSpinner, faStethoscope, faTrashCan, faTriangleExclamation, faUser, faUserShield, faUsers, faUserXmark, faUtensils, faWandMagicSparkles, faXmark,
 } from '@fortawesome/free-solid-svg-icons'
@@ -239,20 +239,21 @@ function Login({ onLogin }) {
   const location = useLocation()
   const [mode, setMode] = useState(new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login')
   const [form, setForm] = useState({ name: '', email: '', password: '' })
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [providers, setProviders] = useState({})
-  const [demoEnabled, setDemoEnabled] = useState(false)
+  const [demoEnabled, setDemoEnabled] = useState(null)
   useEffect(() => { setMode(new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login') }, [location.search])
   useEffect(() => { api('/auth/oauth/providers').then(setProviders).catch(() => {}) }, [])
-  useEffect(() => { api('/auth/demo-status').then((d) => setDemoEnabled(d.enabled)).catch(() => {}) }, [])
+  useEffect(() => { api('/auth/demo-status').then((d) => setDemoEnabled(d.enabled)).catch(() => setDemoEnabled(false)) }, [])
   useEffect(() => {
     const code = new URLSearchParams(location.search).get('code')
     const oauthError = new URLSearchParams(location.search).get('error')
     if (oauthError) setError('소셜 로그인에 실패했습니다. 계정 설정을 확인해 주세요.')
     if (!code) return
-    setBusy(true)
-    api('/auth/oauth/exchange', { method: 'POST', body: JSON.stringify({ code }) }).then(onLogin).catch((e) => setError(e.message)).finally(() => setBusy(false))
+    setBusy('form')
+    api('/auth/oauth/exchange', { method: 'POST', body: JSON.stringify({ code }) }).then(onLogin).catch((e) => setError(e.message)).finally(() => setBusy(''))
   }, [location.search, onLogin])
 
   async function submit(event) {
@@ -262,42 +263,66 @@ function Login({ onLogin }) {
       setError('영문 대·소문자, 숫자, 특수문자를 포함한 8자 이상의 비밀번호를 입력해 주세요.')
       return
     }
-    setBusy(true)
+    setBusy('form')
     try {
-      const result = await api(mode === 'register' ? '/auth/register' : '/auth/login', { method: 'POST', body: JSON.stringify(form) })
-      onLogin(result)
-    } catch (e) { setError(e.message) } finally { setBusy(false) }
+      onLogin(await api(mode === 'register' ? '/auth/register' : '/auth/login', { method: 'POST', body: JSON.stringify(form) }))
+    } catch (e) { setError(e.message) } finally { setBusy('') }
   }
   async function demo(role) {
     setError('')
-    setBusy(true)
+    setBusy(role)
     try { onLogin(await api('/auth/demo-login', { method: 'POST', body: JSON.stringify({ role }) })) }
-    catch (e) { setError(e.message) } finally { setBusy(false) }
+    catch (e) { setError(e.message) } finally { setBusy('') }
   }
-  const oauth = (name, label, className, content) => <button type="button" disabled={!providers[name]} title={providers[name] ? `${label}로 로그인` : `${label} 로그인 설정 대기 중`} aria-label={`${label}로 로그인`} className={`social-button ${className}`} onClick={() => window.location.assign(`${apiBase}/api/auth/oauth/${name}/start`)}>{content}</button>
-  return <div className="auth-layout">
-    <div className="auth-brand-panel" style={{ backgroundImage: 'linear-gradient(160deg,#0b3d3bf2 10%,#0b3d3bb8 60%,#0b3d3b80),url(/images/green-salad.jpg)' }}>
-      <div className="auth-panel-inner"><span className="eyebrow">YOUR HEALTH PARTNER</span><h1>건강한 하루는<br /><em>한 끼의 기록</em>에서<br />시작됩니다.</h1><p>공공데이터와 나의 신체 정보로 계산한 영양 목표, vitapick이 매일 함께 확인해 드릴게요.</p></div>
-      <div className="auth-vitals"><Pulse /><div><span><Icon icon={faHeartPulse} /> 영양 균형 지수</span><span><Icon icon={faFire} /> 열량 목표 대비</span><span><Icon icon={faChartPie} /> 탄·단·지 비율</span></div></div>
-      <div className="auth-panel-footer"><Icon icon={faShieldHeart} /> 비밀번호는 Argon2로 안전하게 보호됩니다.</div>
-    </div>
-    <div className="auth-form-panel"><div className="auth-form-wrap">
-      <div className="auth-heading"><span className="eyebrow">WELCOME TO VITAPICK</span><h2>{mode === 'login' ? '다시 오신 것을 환영해요.' : '건강 기록을 시작해요.'}</h2><p>{mode === 'login' ? '오늘의 건강 지표를 확인해 볼까요?' : '이메일과 비밀번호만 있으면 바로 시작할 수 있어요.'}</p></div>
-      <div className="auth-tabs"><button type="button" className={mode === 'login' ? 'selected' : ''} onClick={() => { setMode('login'); setError('') }}>로그인</button><button type="button" className={mode === 'register' ? 'selected' : ''} onClick={() => { setMode('register'); setError('') }}>회원가입</button></div>
-      <form onSubmit={submit} className="auth-form">
-        {mode === 'register' && <label>이름<input required value={form.name} maxLength={80} autoComplete="name" placeholder="이름을 입력해 주세요" onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>}
-        <label>이메일 주소<input required type="email" value={form.email} autoComplete="email" placeholder="name@example.com" onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-        <label>비밀번호<input required type="password" value={form.password} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} placeholder="비밀번호를 입력해 주세요" minLength={mode === 'register' ? 8 : undefined} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
-        {mode === 'register' && <p className="password-hint"><Icon icon={faLock} /> 영문 대·소문자, 숫자, 특수문자 포함 8자 이상</p>}
+  const switchMode = (next) => { setMode(next); setError('') }
+  const oauth = (name, label, content) => <button type="button" disabled={!providers[name]} title={providers[name] ? `${label}로 로그인` : `${label} 로그인 설정 대기 중`} aria-label={`${label}로 로그인`} className={`lg-social ${name}`} onClick={() => window.location.assign(`${apiBase}/api/auth/oauth/${name}/start`)}><span>{content}</span>{label}</button>
+  const passes = [
+    { role: 'user', icon: faUser, title: '일반 사용자', text: '식단 기록 · AI 문장 기록 · 영양 리포트', tag: 'USER' },
+    { role: 'admin', icon: faUserShield, title: '관리자', text: '회원 관리 화면 체험 · 읽기 전용', tag: 'ADMIN' },
+  ]
+  return <div className="lg-shell"><div className="lg-page">
+    <section className="lg-visual">
+      <div className="lg-copy"><span className="eyebrow">DAILY HEALTH CHECK-IN</span><h1>오늘의 컨디션,<br /><em>한 끼</em>부터 체크인.</h1><p>식단을 기록하면 공공데이터로 열량과 탄·단·지를 계산해 나만의 건강 지표로 보여 드려요.</p></div>
+      <div className="lg-monitor" aria-hidden="true">
+        <div className="lg-monitor-top"><span><i className="live-dot" /> NUTRITION MONITOR</span><span className="lg-sample">예시 화면</span></div>
+        <svg className="lg-ecg" viewBox="0 0 600 110" preserveAspectRatio="none"><path d="M0 60h110l12-18 14 36 16-66 18 82 14-48 10 14h120l10-14 14 30 14-46 12 30h106l10-10 12 22 12-36 10 24h60" /></svg>
+        <div className="lg-readouts">
+          <div><small>ENERGY</small><strong>1,820<em>kcal</em></strong></div>
+          <div><small>BALANCE</small><strong>86<em>/100</em></strong></div>
+          <div><small>MEALS</small><strong>3<em>회</em></strong></div>
+        </div>
+        <div className="lg-macros">{[['carbs', '탄수화물', '228g', 72], ['protein', '단백질', '91g', 64], ['fat', '지방', '61g', 48]].map(([key, label, value, pct]) => <div key={key} className={key}><span>{label}<b>{value}</b></span><i><s style={{ width: `${pct}%` }} /></i></div>)}</div>
+      </div>
+      <ul className="lg-trust"><li><Icon icon={faDatabase} /> 공공데이터 식품 1,095종</li><li><Icon icon={faWandMagicSparkles} /> 문장 한 줄 AI 기록</li><li><Icon icon={faShieldHeart} /> Argon2 비밀번호 보호</li></ul>
+    </section>
+
+    <section className="lg-panel"><div className="lg-card">
+      <div className="lg-head"><span className="lg-badge"><Icon icon={faHeartPulse} /> CHECK-IN</span><h2>{mode === 'login' ? '다시 오신 것을 환영해요' : '건강 기록을 시작해요'}</h2><p>{mode === 'login' ? '계정으로 로그인하거나, 테스트 계정으로 바로 둘러보세요.' : '이메일과 비밀번호만 있으면 바로 시작할 수 있어요.'}</p></div>
+
+      <div className="lg-quick">
+        <div className="lg-quick-title"><Icon icon={faBolt} /> 클릭 한 번으로 체험하기</div>
+        <div className="lg-passes">{passes.map((p) => <button key={p.role} type="button" className={`lg-pass ${p.role}`} disabled={!demoEnabled || !!busy} onClick={() => demo(p.role)}>
+          <span className="lg-pass-icon"><Icon icon={busy === p.role ? faSpinner : p.icon} spin={busy === p.role} /></span>
+          <span className="lg-pass-body"><em>{p.tag}</em><strong>{p.title}</strong><small>{p.text}</small></span>
+          <Icon className="lg-pass-arrow" icon={faArrowRight} />
+        </button>)}</div>
+        <p className="lg-quick-note"><Icon icon={faCircleInfo} /> {demoEnabled === false ? '현재 서버에서 테스트 계정이 비활성화되어 있어요.' : '여러 사람이 함께 쓰는 공용 계정입니다. 관리자 체험은 읽기 전용이에요.'}</p>
+      </div>
+
+      <div className="lg-divider"><span>또는 내 계정으로</span></div>
+      <div className="lg-tabs" role="tablist"><button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'on' : ''} onClick={() => switchMode('login')}>로그인</button><button type="button" role="tab" aria-selected={mode === 'register'} className={mode === 'register' ? 'on' : ''} onClick={() => switchMode('register')}>회원가입</button><i className={mode} /></div>
+      <form onSubmit={submit} className="lg-form">
+        {mode === 'register' && <label className="lg-field"><span>이름</span><div><Icon icon={faUser} /><input required value={form.name} maxLength={80} autoComplete="name" placeholder="이름을 입력해 주세요" onChange={(e) => setForm({ ...form, name: e.target.value })} /></div></label>}
+        <label className="lg-field"><span>이메일 주소</span><div><Icon icon={faEnvelope} /><input required type="email" value={form.email} autoComplete="email" placeholder="name@example.com" onChange={(e) => setForm({ ...form, email: e.target.value })} /></div></label>
+        <label className="lg-field"><span>비밀번호</span><div><Icon icon={faLock} /><input required type={showPassword ? 'text' : 'password'} value={form.password} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} placeholder="비밀번호를 입력해 주세요" minLength={mode === 'register' ? 8 : undefined} onChange={(e) => setForm({ ...form, password: e.target.value })} /><button type="button" className="lg-eye" aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'} onClick={() => setShowPassword(!showPassword)}><Icon icon={showPassword ? faEyeSlash : faEye} /></button></div></label>
+        {mode === 'register' && <p className="lg-hint"><Icon icon={faLock} /> 영문 대·소문자, 숫자, 특수문자 포함 8자 이상</p>}
         {error && <div className="form-error" role="alert"><Icon icon={faCircleExclamation} /> {error}</div>}
-        <button className="button button-primary auth-submit" disabled={busy} type="submit">{busy ? '처리 중...' : mode === 'login' ? '로그인하기' : '계정 만들기'} <Icon icon={faArrowRight} /></button>
+        <button className="button button-primary lg-submit" disabled={!!busy} type="submit">{busy === 'form' ? '처리 중...' : mode === 'login' ? '로그인' : '계정 만들기'} <Icon icon={faRightToBracket} /></button>
       </form>
-      <div className="divider"><span>또는 간편하게 시작하기</span></div>
-      <div className="social-row">{oauth('google', 'Google', 'google', <Icon icon={faGoogle} />)}{oauth('naver', '네이버', 'naver', 'N')}{oauth('kakao', '카카오', 'kakao', 'K')}</div>
-      {demoEnabled && <><div className="demo-box"><div><strong><Icon icon={faStethoscope} /> 먼저 둘러보고 싶으신가요?</strong><p>테스트 계정으로 바로 체험해 보세요. 테스트 관리자는 읽기 전용입니다.</p></div><div className="demo-actions"><button disabled={busy} onClick={() => demo('user')}><Icon icon={faUser} /> 일반 사용자</button><button disabled={busy} onClick={() => demo('admin')}><Icon icon={faEye} /> 테스트 관리자</button></div></div>
-      <p className="auth-terms">테스트 계정은 여러 사람이 함께 쓰는 공용 계정입니다. 실제 개인 정보는 입력하지 마세요.</p></>}
-    </div></div>
-  </div>
+      <div className="lg-socials">{oauth('google', 'Google', <Icon icon={faGoogle} />)}{oauth('naver', '네이버', 'N')}{oauth('kakao', '카카오', 'K')}</div>
+      <p className="lg-foot"><Icon icon={faShieldHeart} /> 로그인 시 <Link to="/policy">개인정보 · 서비스 이용 안내</Link>에 동의한 것으로 봅니다.</p>
+    </div></section>
+  </div></div>
 }
 
 function useMeals(token) {
