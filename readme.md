@@ -16,7 +16,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Render-2496ED?logo=docker&logoColor=white)](Dockerfile)
 
 [![Food data sync](https://img.shields.io/github/actions/workflow/status/fsclass-n/vitapick/sync-foods.yml?label=food%20data%20sync&logo=githubactions&logoColor=white)](https://github.com/fsclass-n/vitapick/actions/workflows/sync-foods.yml)
-[![Tests](https://img.shields.io/badge/backend_tests-14_passed-2ea44f?logo=pytest&logoColor=white)](tests/test_api.py)
+[![Tests](https://img.shields.io/badge/backend_tests-15_passed-2ea44f?logo=pytest&logoColor=white)](tests/test_api.py)
 [![Render](https://img.shields.io/badge/API-Render-46E3B7?logo=render&logoColor=black)](https://vitapick-api.onrender.com/docs)
 [![Netlify](https://img.shields.io/badge/Frontend-Netlify-00C7B7?logo=netlify&logoColor=white)](https://vitapick.netlify.app)
 [![Repo size](https://img.shields.io/github/repo-size/fsclass-n/vitapick?color=3f7455)](https://github.com/fsclass-n/vitapick)
@@ -36,8 +36,8 @@
 | 지표 | 값 | 근거 |
 | --- | --- | --- |
 | 공공데이터 식품 적재 | **1,095개** (원본 5,000행 정제) | `rpa/sync_foods.py` · TiDB `foods` |
-| API 엔드포인트 | **21개** (인증 · 영양 · 식단 · AI 문장 분석 · 식품 · 관리자 · OAuth) | `backend/main.py` |
-| 백엔드 자동 테스트 | **14개 통과** | `tests/test_api.py` |
+| API 엔드포인트 | **22개** (인증 · 영양 · 식단 · AI 문장 분석 · 식품 · 관리자 · OAuth) | `backend/main.py` |
+| 백엔드 자동 테스트 | **15개 통과** | `tests/test_api.py` |
 | 배포 | **분리 배포 3곳** — Netlify · Render(Docker) · GitHub Actions(배치) | `netlify.toml` · `render.yaml` · `.github/workflows/` |
 
 ## 핵심 기능
@@ -178,7 +178,7 @@ with SessionLocal() as db:
 | Meals | `GET /meals` · `POST /meals` · `DELETE /meals/{meal_id}` | 로그인 · **본인 기록만** |
 | AI 문장 분석 | `POST /meals/parse` (2~300자, 사용자당 10분 20회) · `GET /meals/parse/status` | 로그인 / 공개 |
 | Foods | `GET /foods?q=` (2~80자, LIKE 와일드카드 이스케이프) | 공개 |
-| Admin | `GET /admin/users` · `PATCH /admin/users/{user_id}/role` (`user` · `viewer` · `admin`) | 조회: 관리자·테스트 관리자 / 변경: **관리자만** |
+| Admin | `GET /admin/users` · `PATCH /admin/users/{user_id}/role` · `DELETE /admin/users/{user_id}` | 조회: 관리자·테스트 관리자 / 변경: **관리자만** |
 
 ## Directory Structure
 
@@ -197,7 +197,7 @@ vitapick/
 ├── rpa/
 │   └── sync_foods.py        # 공공데이터 Extract → Validate → Transform → Load
 ├── tests/
-│   └── test_api.py          # 백엔드 테스트 14개 (인메모리 SQLite)
+│   └── test_api.py          # 백엔드 테스트 15개 (인메모리 SQLite)
 ├── .github/workflows/
 │   └── sync-foods.yml       # 주간 공공데이터 동기화
 ├── docs/                    # 설계서 · 개발 기록 · 발표 자료 · 영상 · 포트폴리오 이미지

@@ -575,8 +575,18 @@ function Admin({ token, user }) {
   const [users, setUsers] = useState([])
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
+  const [confirmId, setConfirmId] = useState(null)
   const readOnly = user.role !== 'admin'
   useEffect(() => { api('/admin/users', { token }).then(setUsers).catch((e) => setError(e.message)) }, [token])
+  async function removeUser(id) {
+    setBusyId(id)
+    setError('')
+    try {
+      await api(`/admin/users/${id}`, { token, method: 'DELETE' })
+      setUsers(users.filter((u) => u.id !== id))
+      setConfirmId(null)
+    } catch (e) { setError(e.message) } finally { setBusyId(null) }
+  }
   async function changeRole(id, role) {
     setBusyId(id); setError('')
     try {
@@ -591,7 +601,7 @@ function Admin({ token, user }) {
     <div className="role-stats">{[['전체 회원', users.length, faUsers, ''], ['관리자', count('admin'), faUserShield, 'admin'], ['테스트 관리자', count('viewer'), faEye, 'viewer'], ['일반 사용자', count('user'), faUser, 'user']].map(([label, n, icon, role]) => <div key={label} className={`role-stat ${role}`}><Icon icon={icon} /><span>{label}</span><strong>{n}</strong></div>)}</div>
     {error && <div className="form-error" role="alert">{error}</div>}
     <div className="panel admin-panel"><div className="panel-heading"><div><span className="eyebrow">MEMBERS</span><h3>회원 목록</h3></div><div className="role-legend"><span><em className="role-badge role-admin">관리자</em> 모든 권한</span><span><em className="role-badge role-viewer">테스트 관리자</em> 읽기 전용</span><span><em className="role-badge role-user">일반 사용자</em> 본인 기록</span></div></div>
-      <div className="table-scroll"><table><thead><tr><th>회원</th><th>이메일</th><th>가입 방식</th><th>현재 권한</th><th>권한 변경</th></tr></thead><tbody>{users.map((item) => <tr key={item.id}><td><div className="table-person"><span><Icon icon={faUser} /></span><strong>{item.name}{item.id === user.id ? ' (나)' : ''}</strong></div></td><td>{item.email}</td><td>{item.provider || '이메일'}</td><td><em className={`role-badge role-${item.role}`}>{roleLabels[item.role] || item.role}</em></td><td>{readOnly ? <span className="locked"><Icon icon={faLock} /> 읽기 전용</span> : <select aria-label={`${item.name} 권한`} disabled={item.id === user.id || busyId === item.id} value={item.role} onChange={(e) => changeRole(item.id, e.target.value)}><option value="user">일반 사용자</option><option value="viewer">테스트 관리자 (읽기 전용)</option><option value="admin">관리자</option></select>}</td></tr>)}</tbody></table></div>{!users.length && <EmptyState text="표시할 회원이 없습니다." />}</div>
+      <div className="table-scroll"><table><thead><tr><th>회원</th><th>이메일</th><th>가입 방식</th><th>현재 권한</th><th>권한 변경</th><th>삭제</th></tr></thead><tbody>{users.map((item) => <tr key={item.id}><td><div className="table-person"><span><Icon icon={faUser} /></span><strong>{item.name}{item.id === user.id ? ' (나)' : ''}</strong></div></td><td>{item.email}</td><td>{item.provider || '이메일'}</td><td><em className={`role-badge role-${item.role}`}>{roleLabels[item.role] || item.role}</em></td><td>{readOnly ? <span className="locked"><Icon icon={faLock} /> 읽기 전용</span> : <select aria-label={`${item.name} 권한`} disabled={item.id === user.id || busyId === item.id} value={item.role} onChange={(e) => changeRole(item.id, e.target.value)}><option value="user">일반 사용자</option><option value="viewer">테스트 관리자 (읽기 전용)</option><option value="admin">관리자</option></select>}</td><td>{readOnly || item.id === user.id || item.is_demo ? <span className="locked">{readOnly ? <><Icon icon={faLock} /> 읽기 전용</> : '—'}</span> : confirmId === item.id ? <span className="confirm-inline"><button className="danger-link" disabled={busyId === item.id} onClick={() => removeUser(item.id)}>{busyId === item.id ? '삭제 중...' : '삭제 확정'}</button><button className="text-button" onClick={() => setConfirmId(null)}>취소</button></span> : <button className="icon-button danger" aria-label={`${item.name} 회원 삭제`} title="회원 삭제" onClick={() => setConfirmId(item.id)}><Icon icon={faTrashCan} /></button>}</td></tr>)}</tbody></table></div>{!users.length && <EmptyState text="표시할 회원이 없습니다." />}</div>
   </div></div>
 }
 function Policy() {

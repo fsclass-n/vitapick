@@ -151,6 +151,13 @@ def masked_user(user: User):
     return {**public_user(user), "email": f"{mask(local, 2)}@{domain}", "name": mask(user.name, 1)}
 
 
+def delete_account(db: Session, user: User):
+    db.execute(delete(OAuthTicket).where(OAuthTicket.user_id == user.id))
+    db.execute(delete(Meal).where(Meal.user_id == user.id))
+    db.delete(user)
+    db.commit()
+
+
 def issue_token(user: User):
     now = datetime.now(timezone.utc)
     token = jwt.encode({"sub": str(user.id), "iat": now, "exp": now + timedelta(hours=12)}, secret_key, algorithm="HS256")
@@ -181,7 +188,7 @@ def staff_user(user: User = Depends(current_user)):
 
 def admin_user(user: User = Depends(staff_user)):
     if user.role != "admin":
-        raise HTTPException(status_code=403, detail="테스트 관리자는 읽기 전용입니다. 권한을 변경할 수 없습니다.")
+        raise HTTPException(status_code=403, detail="테스트 관리자는 읽기 전용입니다.")
     return user
 
 
@@ -241,10 +248,7 @@ def withdraw(payload: Withdrawal, user: User = Depends(current_user), db: Sessio
             password_hasher.verify(user.password_hash, payload.password)
         except VerificationError:
             raise HTTPException(status_code=401, detail="비밀번호가 올바르지 않습니다.")
-    db.execute(delete(OAuthTicket).where(OAuthTicket.user_id == user.id))
-    db.execute(delete(Meal).where(Meal.user_id == user.id))
-    db.delete(user)
-    db.commit()
+    delete_account(db, user)
 
 
 @app.get("/api/auth/demo-status")
@@ -389,6 +393,18 @@ def set_role(user_id: int, payload: RoleChange, admin: User = Depends(admin_user
     target.role = payload.role
     db.commit()
     return public_user(target)
+
+
+@app.delete("/api/admin/users/{user_id}", status_code=204)
+def delete_user(user_id: int, admin: User = Depends(admin_user), db: Session = Depends(get_db)):
+    target = db.get(User, user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="회원을 찾을 수 없습니다.")
+    if target.id == admin.id:
+        raise HTTPException(status_code=400, detail="본인 계정은 회원 관리에서 삭제할 수 없습니다.")
+    if is_demo(target):
+        raise HTTPException(status_code=400, detail="테스트 계정은 삭제할 수 없습니다.")
+    delete_account(db, target)
 
 
 providers = {
