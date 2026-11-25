@@ -264,6 +264,16 @@ input::placeholder,textarea::placeholder{color:#9fb3b0}
 .insight-callout>span{width:40px;height:40px;flex:none;border-radius:12px;display:grid;place-items:center;background:var(--teal-l);color:var(--teal)}
 .insight-callout p{font-size:14px;color:#48605d;flex:1;margin:0;line-height:1.7}.insight-callout a{white-space:nowrap;color:var(--teal);font-size:13px;font-weight:700}
 .profile-panel{margin-top:18px;scroll-margin-top:100px}.profile-panel>p{font-size:14px;color:var(--muted);line-height:1.8}
+.account-panel{margin-top:18px}.account-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#fdecec;color:var(--heart)}
+.account-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.account-row p{margin:0;color:var(--muted);font-size:13px;line-height:1.7}
+.danger-link{color:var(--heart);border:1px solid #f3c1c2;border-radius:10px;font-size:13px;white-space:nowrap}.danger-link:hover{background:#fdecec}
+.withdraw-box{border:1px solid #f3c1c2;background:#fdf6f6;border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.withdraw-box strong{color:#a6262c;display:flex;align-items:center;gap:8px;font-size:15px}
+.withdraw-box p{margin:0;color:var(--muted);font-size:13px;line-height:1.7}
+.withdraw-box label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700}
+.withdraw-box input{border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:#fff}
+.withdraw-actions{display:flex;gap:8px;align-items:center}.button-danger{background:var(--heart);color:#fff}
+@media(max-width:720px){.account-row{flex-direction:column;align-items:stretch}.danger-link{align-self:flex-start}}
 .bmi-chip{font:800 13px var(--num);background:var(--teal-l);color:var(--teal-d);padding:7px 12px;border-radius:999px}
 .profile-fields{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 .profile-result{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.profile-result>span{font-size:12px;font-weight:700;color:var(--muted);background:var(--bg);border-radius:12px;padding:8px 12px}.profile-result b{margin-left:6px;font:800 14px var(--num);color:var(--ink)}.profile-result .button{margin-left:auto}

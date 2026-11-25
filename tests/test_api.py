@@ -12,7 +12,7 @@ import json
 
 from backend import main, meal_parser
 from backend.main import app
-from backend.models import Food, OAuthTicket, User, utc_now
+from backend.models import Food, Meal, OAuthTicket, User, utc_now
 
 
 @pytest.fixture
@@ -313,3 +313,40 @@ def test_gemini_structures_the_sentence_and_falls_back_to_rules(client, monkeypa
     monkeypatch.setattr(meal_parser.httpx, "post", broken_post)
     fallback = web.post("/api/meals/parse", headers=headers, json={"text": "현미밥 한 공기", "today": "2026-11-25", "hour": 12}).json()
     assert fallback["engine"] == "rules" and fallback["items"][0]["serving_g"] == 210
+
+
+def test_withdraw_requires_password_and_removes_user_data(client):
+    web, session = client
+    first = register(web, "one@example.com")
+    second = register(web, "two@example.com")
+    assert web.post("/api/meals", headers=first, json={
+        "food_name": "현미밥", "meal_type": "점심", "eaten_at": "2026-11-25",
+        "serving_g": 150, "calories": 220, "protein": 4, "carbs": 45, "fat": 1,
+    }).status_code == 201
+    assert web.request("DELETE", "/api/auth/me", headers=first, json={}).status_code == 422
+    assert web.request("DELETE", "/api/auth/me", headers=first, json={"password": "WrongPass1!"}).status_code == 401
+    assert web.request("DELETE", "/api/auth/me", headers=first, json={"password": "ValidPass1!"}).status_code == 204
+    assert web.get("/api/auth/me", headers=first).status_code == 401
+    assert web.post("/api/auth/login", json={"email": "one@example.com", "password": "ValidPass1!"}).status_code == 401
+    with session() as db:
+        assert db.query(Meal).count() == 0
+        assert db.query(User).count() == 1
+        assert db.query(User).one().email == "two@example.com"
+
+
+def test_withdraw_blocked_for_demo_and_last_admin(client, monkeypatch):
+    web, session = client
+    monkeypatch.setattr(main, "demo_enabled", True)
+    demo = web.post("/api/auth/demo-login", json={"role": "user"}).json()
+    demo_head = {"Authorization": f'Bearer {demo["access_token"]}'}
+    assert web.request("DELETE", "/api/auth/me", headers=demo_head, json={}).status_code == 400
+    auth = register(web, "admin@example.com")
+    with session() as db:
+        db.query(User).filter_by(email="admin@example.com").one().role = "admin"
+        db.commit()
+    assert web.request("DELETE", "/api/auth/me", headers=auth, json={"password": "ValidPass1!"}).status_code == 400
+    register(web, "admin2@example.com")
+    with session() as db:
+        db.query(User).filter_by(email="admin2@example.com").one().role = "admin"
+        db.commit()
+    assert web.request("DELETE", "/api/auth/me", headers=auth, json={"password": "ValidPass1!"}).status_code == 204

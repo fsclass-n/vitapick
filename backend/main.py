@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -116,6 +116,10 @@ class MealInput(BaseModel):
     protein: float = Field(ge=0, le=10000, allow_inf_nan=False)
     carbs: float = Field(ge=0, le=10000, allow_inf_nan=False)
     fat: float = Field(ge=0, le=10000, allow_inf_nan=False)
+
+
+class Withdrawal(BaseModel):
+    password: str | None = Field(default=None, max_length=128)
 
 
 def valid_password(value: str) -> bool:
@@ -221,6 +225,26 @@ def login(payload: Login, db: Session = Depends(get_db)):
 @app.get("/api/auth/me")
 def me(user: User = Depends(current_user)):
     return public_user(user)
+
+
+@app.delete("/api/auth/me", status_code=204)
+def withdraw(payload: Withdrawal, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    if is_demo(user):
+        raise HTTPException(status_code=400, detail="테스트 계정은 탈퇴할 수 없습니다.")
+    real_admins = select(func.count()).select_from(User).where(User.role == "admin", User.email.not_in(demo_emails.values()))
+    if user.role == "admin" and db.scalar(real_admins) <= 1:
+        raise HTTPException(status_code=400, detail="마지막 관리자는 탈퇴할 수 없습니다. 다른 관리자를 먼저 지정해 주세요.")
+    if user.password_hash:
+        if not payload.password:
+            raise HTTPException(status_code=422, detail="비밀번호를 입력해 주세요.")
+        try:
+            password_hasher.verify(user.password_hash, payload.password)
+        except VerificationError:
+            raise HTTPException(status_code=401, detail="비밀번호가 올바르지 않습니다.")
+    db.execute(delete(OAuthTicket).where(OAuthTicket.user_id == user.id))
+    db.execute(delete(Meal).where(Meal.user_id == user.id))
+    db.delete(user)
+    db.commit()
 
 
 @app.get("/api/auth/demo-status")

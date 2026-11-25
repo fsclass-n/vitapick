@@ -6,7 +6,7 @@ import {
   faAppleWhole, faArrowRight, faArrowUp, faArrowUpRightFromSquare, faBookMedical, faBowlRice, faCalculator, faCalendarDays, faChartPie,
   faChartSimple, faCheck, faChevronRight, faCircleCheck, faCircleExclamation, faDatabase, faDroplet, faDrumstickBite, faEnvelope, faEye,
   faFileShield, faFire, faHandHoldingMedical, faHeartPulse, faLock, faNotesMedical, faPenToSquare, faPlus, faServer, faShieldHeart,
-  faSpinner, faStethoscope, faTrashCan, faTriangleExclamation, faUser, faUserShield, faUsers, faUtensils, faWandMagicSparkles, faXmark,
+  faSpinner, faStethoscope, faTrashCan, faTriangleExclamation, faUser, faUserShield, faUsers, faUserXmark, faUtensils, faWandMagicSparkles, faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { faGithub, faGoogle } from '@fortawesome/free-brands-svg-icons'
 import { api, apiBase } from './api'
@@ -143,7 +143,7 @@ function App() {
         <Route path="/login" element={gate(<Dashboard token={token} user={user} />)} />
         <Route path="/dashboard" element={gate(<Dashboard token={token} user={user} />)} />
         <Route path="/journal" element={gate(<Journal token={token} />)} />
-        <Route path="/insights" element={gate(<Insights token={token} />)} />
+        <Route path="/insights" element={gate(<Insights token={token} user={user} onWithdraw={logout} />)} />
         <Route path="/admin" element={staff ? <Admin token={token} user={user} /> : user ? <AdminOnly /> : <Login onLogin={signedIn} />} />
         <Route path="/policy" element={<Policy />} />
         <Route path="*" element={<Home />} />
@@ -489,7 +489,7 @@ function Journal({ token }) {
     <p className="medical-note"><Icon icon={faCircleExclamation} /> 공공데이터 수치는 100g 기준이며 제조사·조리법에 따라 달라질 수 있습니다.</p>
   </div></div>
 }
-function Insights({ token }) {
+function Insights({ token, user, onWithdraw }) {
   const location = useLocation()
   const { meals, error, loading } = useMeals(token)
   const { data: recommendation, setData: setRecommendation, error: targetError } = useTargets(token)
@@ -510,7 +510,38 @@ function Insights({ token }) {
     <ProfileEditor token={token} recommendation={recommendation} onSave={setRecommendation} />
     <div className="insight-callout"><span><Icon icon={faStethoscope} /></span><p>{daily.length ? totals.protein < targets.protein ? '오늘은 단백질이 목표보다 적게 기록되었어요. 균형 잡힌 식단을 위해 다양한 식품을 살펴보세요.' : '오늘의 단백질 섭취가 목표에 도달했어요. 다른 영양소도 함께 확인해 보세요.' : '아직 오늘의 식단 기록이 없어요. 첫 식사를 남겨 리포트를 완성해 보세요.'}</p><Link to="/journal">식단 기록하기 <Icon icon={faArrowRight} /></Link></div>
     <p className="medical-note"><Icon icon={faCircleExclamation} /> {recommendation.personalized ? '목표치는 Mifflin-St Jeor 공식과 활동량, 일반적인 영양소 비율로 추정한 값입니다.' : '목표치는 일반 성인용 예시입니다.'} 질환·임신 등 개인 상황을 반영한 의료적 조언이 아닙니다.</p>
+    <AccountSection token={token} user={user} onWithdraw={onWithdraw} />
   </div></div>
+}
+function AccountSection({ token, user, onWithdraw }) {
+  const [open, setOpen] = useState(false)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const needsPassword = !user.provider
+  async function withdraw(e) {
+    e.preventDefault()
+    setBusy(true)
+    setError('')
+    try {
+      await api('/auth/me', { token, method: 'DELETE', body: JSON.stringify({ password: needsPassword ? password : null }) })
+      onWithdraw()
+    } catch (err) {
+      setError(err.message)
+      setBusy(false)
+    }
+  }
+  return <section className="panel account-panel"><div className="panel-heading"><div><span className="eyebrow">ACCOUNT</span><h3>계정 관리</h3></div><span className="account-icon"><Icon icon={faUserXmark} /></span></div>
+    {user.is_demo ? <p className="muted"><Icon icon={faLock} /> 공용 테스트 계정은 탈퇴할 수 없습니다.</p>
+      : !open ? <div className="account-row"><p className="muted">회원 탈퇴를 하면 식단 기록, 영양 목표, 계정 정보가 모두 삭제되며 되돌릴 수 없습니다.</p><button className="text-button danger-link" onClick={() => setOpen(true)}>회원 탈퇴</button></div>
+      : <form className="withdraw-box" onSubmit={withdraw}>
+        <strong><Icon icon={faCircleExclamation} /> 정말 탈퇴하시겠어요?</strong>
+        <p>모든 식단 기록과 개인 설정이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+        {needsPassword && <label>비밀번호 확인<input required type="password" value={password} autoComplete="current-password" placeholder="계정 비밀번호" onChange={(e) => setPassword(e.target.value)} /></label>}
+        {error && <div className="form-error" role="alert">{error}</div>}
+        <div className="withdraw-actions"><button type="submit" className="button button-danger" disabled={busy}>{busy ? '처리 중...' : '영구 삭제'}</button><button type="button" className="text-button" onClick={() => { setOpen(false); setPassword(''); setError('') }}>취소</button></div>
+      </form>}
+  </section>
 }
 function ProfileEditor({ token, recommendation, onSave }) {
   const [form, setForm] = useState({ age: '', biological_sex: 'female', height_cm: '', weight_kg: '', activity_level: 'light' })
@@ -573,6 +604,7 @@ function Policy() {
       <li><b>이용 목적</b> 로그인, 개인 영양 목표 계산, 식단 리포트 제공. 광고나 제3자 판매에 쓰지 않습니다.</li>
       <li><b>보관 위치</b> TiDB Cloud 데이터베이스(TLS 연결). 식단과 신체 정보는 본인 계정으로만 조회됩니다.</li>
       <li><b>관리자 열람</b> 관리자는 회원의 이름·이메일·가입 방식·권한만 봅니다. 테스트 관리자에게는 실제 회원 정보가 가려져 표시됩니다.</li>
+      <li><b>회원 탈퇴</b> 영양 리포트 페이지 하단의 계정 관리에서 직접 탈퇴할 수 있습니다. 탈퇴 시 식단 기록·영양 목표·계정 정보가 즉시 삭제됩니다.</li>
       <li><b>삭제 요청</b> <a href={`${REPO}/issues`} target="_blank" rel="noopener">GitHub Issues</a>로 요청할 수 있습니다.</li></ul></section>
     <section className="panel" id="ai"><h3><Icon icon={faWandMagicSparkles} /> AI 기능 안내</h3><ul>
       <li>문장으로 기록할 때 입력한 문장은 Google Gemini API로 전송되어 음식명·식사 구분·날짜·섭취량으로 나뉩니다. API 키가 없거나 응답에 실패하면 서버 내 규칙 분석기가 처리합니다.</li>
