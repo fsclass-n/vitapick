@@ -29,7 +29,7 @@ from .models import Food, Meal, OAuthTicket, User, utc_now
 env = os.getenv("APP_ENV", "development")
 demo_enabled = os.getenv("DEMO_ACCOUNTS_ENABLED", "false").lower() == "true"
 # Shared one-click accounts; ".local" is rejected by sign-up validation, so these cannot be claimed.
-demo_emails = {"user": "demo-user@vitapick.local", "admin": "demo-admin@vitapick.local"}
+demo_emails = {"user": "demo-user@healthpick.local", "admin": "demo-admin@healthpick.local"}
 secret_key = os.getenv("JWT_SECRET") or secrets.token_urlsafe(48)
 if env == "production" and not os.getenv("JWT_SECRET"):
     raise RuntimeError("JWT_SECRET is required in production")
@@ -38,7 +38,7 @@ frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
 backend_url = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
 password_hasher = PasswordHasher()
 bearer = HTTPBearer(auto_error=False)
-logger = logging.getLogger("vitapick")
+logger = logging.getLogger("healthpick")
 ROLES = ("user", "admin", "viewer")  # viewer = 테스트 관리자: read-only admin console
 PARSE_LIMIT, PARSE_WINDOW = 20, 600
 parse_history: dict[int, deque] = defaultdict(deque)
@@ -61,10 +61,10 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="vitapick API", lifespan=lifespan)
+app = FastAPI(title="healthpick API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list({frontend_url, "https://vitapick.netlify.app", "https://carepick.netlify.app", "http://localhost:5173", "http://127.0.0.1:5173"}),
+    allow_origins=list({frontend_url, "https://healthpick.netlify.app", "http://localhost:5173", "http://127.0.0.1:5173"}),
     allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
@@ -494,7 +494,7 @@ async def oauth_callback(provider: str, request: Request, code: str = "", state:
         if not user:
             if db.scalar(select(User).where(User.email == email)):
                 return failure  # Never silently link accounts by email.
-            user = User(email=email, name=(name or "비타픽 사용자")[:80], provider=provider, provider_id=str(provider_id))
+            user = User(email=email, name=(name or "헬스픽 사용자")[:80], provider=provider, provider_id=str(provider_id))
             db.add(user)
             db.commit()
             db.refresh(user)

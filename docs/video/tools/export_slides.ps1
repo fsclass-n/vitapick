@@ -1,5 +1,5 @@
 # Export every slide of docs/프로젝트_발표자료.pptx as a 1920x1080 PNG (read-only open).
-# usage: powershell -File export_slides.ps1 -Work E:\wi\carepick-video-work
+# usage: powershell -File export_slides.ps1 -Work E:\wi\healthpick-video-work
 param([Parameter(Mandatory = $true)][string]$Work)
 # Located by pattern: Windows PowerShell 5 misreads non-ASCII literals in BOM-less scripts.
 $deck = Get-ChildItem (Join-Path $PSScriptRoot '..\..') -Filter '*.pptx' | Select-Object -First 1

@@ -14,7 +14,7 @@ import video_scenes as v
 
 FF = imageio_ffmpeg.get_ffmpeg_exe()
 WORK, OUT = Path(sys.argv[1]), Path(sys.argv[2])
-final, hl = OUT / 'carepick_final.mp4', OUT / 'carepick_highlight.mp4'
+final, hl = OUT / 'healthpick_final.mp4', OUT / 'healthpick_highlight.mp4'
 scenes = json.loads((WORK / 'timing.json').read_text(encoding='utf-8'))
 ok = True
 

@@ -13,12 +13,12 @@ scenes = json.loads((WORK / 'timing.json').read_text(encoding='utf-8'))
 DOC = Path(__file__).resolve().parents[1] / '영상_대본_및_연출가이드.md'
 
 SCREEN = {
-    'site': 'vitapick.onrender.com', 'docs': 'vitapick-api.onrender.com/docs', 'actions': 'GitHub Actions',
+    'site': 'healthpick.onrender.com', 'docs': 'healthpick-api.onrender.com/docs', 'actions': 'GitHub Actions',
 }
 ACTION = {
     'd01': '홈 히어로 제목 → 배지·대시보드 카드 강조 → 서비스 소개로 스크롤',
     'd02': '헤더 `로그인` → 브랜드 패널 → 소셜 버튼 → 테스트 계정 박스 강조',
-    'd03': '`회원가입` 탭 → 이름·이메일·약한 비밀번호(carepick1) 입력 → `계정 만들기` → 정책 오류 강조 (서버로 전송되지 않음)',
+    'd03': '`회원가입` 탭 → 이름·이메일·약한 비밀번호(healthpick1) 입력 → `계정 만들기` → 정책 오류 강조 (서버로 전송되지 않음)',
     'd04': '`로그인` 탭 → `일반 사용자` 버튼 강조 → 클릭',
     'd05': '영양 진행률 카드 4개 → 상단 메뉴 3개 강조',
     'd06': '`식단 기록` → 음식 이름 `현미` 입력 → 공공데이터 검색 결과 → 첫 결과 선택 → 자동 입력된 영양값 강조',
@@ -62,7 +62,7 @@ for sc in scenes:
     rows.append(f"| {mmss(sc['start'])} | {sc['id']} | {screen(sc)} | {act} | {script} | {tags} |")
 
 speech = sum(sum(l['d'] for l in s['lines']) for s in scenes)
-doc = f"""# carepick 10분 발표·시연 영상 — 대본 및 연출 가이드
+doc = f"""# healthpick 10분 발표·시연 영상 — 대본 및 연출 가이드
 
 이 문서는 `docs/video/tools/gen_guide.py`가 실제 음성 길이(timing.json)로 생성합니다. 대본을 고칠 때는
 `docs/video/tools/video_scenes.py`만 수정하고 도구를 다시 실행합니다.
@@ -71,11 +71,11 @@ doc = f"""# carepick 10분 발표·시연 영상 — 대본 및 연출 가이드
 
 | 항목 | 내용 |
 | --- | --- |
-| 파일 | `docs/video/carepick_final.mp4` (10:00, 1920×1080, 30fps, H.264 + AAC 스테레오) |
+| 파일 | `docs/video/healthpick_final.mp4` (10:00, 1920×1080, 30fps, H.264 + AAC 스테레오) |
 | 발표자 | 이오리 (팀 조장) — 합성 음성 `{v.VOICE}`, 속도 {v.RATE}, 문장 사이 {v.GAP}초 쉼 |
-| 시연 | 운영 사이트 `vitapick.onrender.com`의 **공용 테스트 계정 2개(일반 사용자 / 관리자)** 비교 |
+| 시연 | 운영 사이트 `healthpick.onrender.com`의 **공용 테스트 계정 2개(일반 사용자 / 관리자)** 비교 |
 | 장면 | {len(scenes)}개 · 실제 말하는 시간 {speech:.0f}초 / {v.TOTAL}초 |
-| 자막 | 화면 하단 자막 + `docs/video/carepick_final.srt` |
+| 자막 | 화면 하단 자막 + `docs/video/healthpick_final.srt` |
 
 > 내레이션은 합성 음성입니다. 영상을 공개할 때 설명란에 "AI 합성 음성 사용"을 표기하세요.
 
@@ -112,7 +112,7 @@ doc = f"""# carepick 10분 발표·시연 영상 — 대본 및 연출 가이드
 python tts.py WORK                    # 문장별 음성 + timing.json
 powershell -File export_slides.ps1 -Work WORK
 node record_demo.js WORK              # 운영 사이트 시연 녹화 (NODE_PATH에 puppeteer-core)
-python compose.py WORK OUT            # 합성 → carepick_final.mp4 / .srt / highlight / thumbnail
+python compose.py WORK OUT            # 합성 → healthpick_final.mp4 / .srt / highlight / thumbnail
 python check_final.py WORK OUT        # 길이·형식·용량·음량·깜박임 검사
 python gen_guide.py WORK              # 이 문서 갱신
 ```

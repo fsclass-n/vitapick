@@ -4,8 +4,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .coverage
-vitapick-dev.db
-vitapick-dev.db-*
+healthpick-dev.db
+healthpick-dev.db-*
 frontend/node_modules/
 frontend/dist/
 .netlify/

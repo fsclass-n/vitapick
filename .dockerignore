@@ -7,4 +7,4 @@ docs
 tests
 __pycache__
 *.pyc
-vitapick-dev.db
+healthpick-dev.db

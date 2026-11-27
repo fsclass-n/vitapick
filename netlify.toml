@@ -5,4 +5,4 @@
 
 [build.environment]
   NODE_VERSION = "24"
-  VITE_API_URL = "https://vitapick-api.onrender.com"
+  VITE_API_URL = "https://healthpick-api.onrender.com"

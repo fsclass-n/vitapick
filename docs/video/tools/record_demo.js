@@ -1,4 +1,4 @@
-// Records every web/mobile scene of the carepick video from the live Render deployment.
+// Records every web/mobile scene of the healthpick video from the live Render deployment.
 // Timing comes from timing.json (written by tts.py), so clicks land on the narration.
 // Frames come from the CDP screencast (lossless-ish JPEG, real timestamps) and are turned into
 // constant-30fps clips by compose.py. Overlays (cursor, click ring, highlight border, fake address
@@ -11,10 +11,10 @@ const puppeteer = require('puppeteer-core');
 
 const WORK = process.argv[2];
 const ONLY = new Set(process.argv.slice(3));
-const SITE = 'https://vitapick.onrender.com';
-const API = 'https://vitapick-api.onrender.com/api';
-const DOCS = 'https://vitapick-api.onrender.com/docs';
-const ACTIONS = 'https://github.com/fsclass-n/vitapick/actions';
+const SITE = 'https://healthpick.onrender.com';
+const API = 'https://healthpick-api.onrender.com/api';
+const DOCS = 'https://healthpick-api.onrender.com/docs';
+const ACTIONS = 'https://github.com/fsclass-n/healthpick/actions';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const scenes = JSON.parse(fs.readFileSync(path.join(WORK, 'timing.json'), 'utf8'));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -140,7 +140,7 @@ const rowSelect = async (page, name) => {
 };
 const realRowSelect = async (page) => {
   const rows = await page.$$('.admin-panel tbody tr');
-  for (const row of rows) if (!(await row.evaluate((r) => r.textContent.includes('carepick.local')))) return row.$('select');
+  for (const row of rows) if (!(await row.evaluate((r) => r.textContent.includes('healthpick.local')))) return row.$('select');
   throw new Error('no real member row');
 };
 
@@ -151,7 +151,7 @@ const SCRIPTS = {
     await at(0, 0); await d.click('.auth-tabs button:nth-child(2)', 600);
     await d.type('.auth-form label:nth-of-type(1) input', '테스트', 160);
     await d.type('.auth-form input[type=email]', 'visitor@example.com', 55);
-    await d.type('.auth-form input[type=password]', 'carepick1', 90);
+    await d.type('.auth-form input[type=password]', 'healthpick1', 90);
     await at(1, -0.9); await d.click('.auth-submit', 600); await sleep(500); await d.hl('.form-error', 3600);
     await at(2, 0.3); await d.hl('.password-hint', 2600); await d.park(1650, 860);
   },
@@ -194,7 +194,7 @@ const SCRIPTS = {
     await at(2, -0.4); await d.click({ x: 22, y: 430 }, 700);
   },
   async d11({ d, at, page }) {
-    await at(0, 0.5); await page.evaluate(() => window.__addr('https://vitapick.onrender.com', '/admin'));
+    await at(0, 0.5); await page.evaluate(() => window.__addr('https://healthpick.onrender.com', '/admin'));
     await sleep(500); await page.keyboard.press('Enter');
     await at(1, -0.8); await d.route('/admin'); await page.evaluate(() => window.__addrHide());
     await page.waitForSelector('.admin-only'); await at(1, 0); await d.hl('.admin-only h1', 3000); await d.move('.admin-only h1', 800);
@@ -212,7 +212,7 @@ const SCRIPTS = {
     await at(0, 0); await d.click(text('회원 관리', '.desktop-nav'), 600); await page.waitForSelector('.admin-panel tbody tr');
     await sleep(400); await d.hl('.admin-summary', 2800);
     await at(1, 0.4); const rows = await page.$$('.admin-panel tbody tr');
-    const real = []; for (const r of rows) if (!(await r.evaluate((x) => x.textContent.includes('carepick.local')))) real.push(r);
+    const real = []; for (const r of rows) if (!(await r.evaluate((x) => x.textContent.includes('healthpick.local')))) real.push(r);
     for (const r of real) await d.hl(r, 4200);
     await d.move(real[0], 900, 0.35, 0.5);
   },
@@ -273,7 +273,7 @@ const SCRIPTS = {
     const p = await browser.newPage(); await p.setViewport(viewport); await p.evaluateOnNewDocument(OVERLAY);
     await p.goto(url.startsWith(SITE) ? SITE + '/' : url, { waitUntil: 'networkidle0', timeout: 120000 });
     if (url.startsWith(SITE)) {
-      await p.evaluate((t) => { sessionStorage.clear(); if (t) sessionStorage.setItem('carepick_token', t); }, token || null);
+      await p.evaluate((t) => { sessionStorage.clear(); if (t) sessionStorage.setItem('healthpick_token', t); }, token || null);
       await p.goto(url, { waitUntil: 'networkidle0' });
     }
     await p.evaluate(() => document.fonts.ready); return p;

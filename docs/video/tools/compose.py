@@ -1,4 +1,4 @@
-"""Compose the carepick video from slides, recorded frames, overlays and narration.
+"""Compose the healthpick video from slides, recorded frames, overlays and narration.
 
 Pipeline: overlays (Pillow PNG) -> per-scene clip (exact frame count, 30 fps) -> concat ->
 narration track (per-scene, exact length, two-pass loudnorm -16 LUFS) -> 2-pass H.264 encode ->
@@ -27,7 +27,7 @@ W, H, FPS = 1920, 1080, v.FPS
 PX = W / 13.333  # slide inch -> px
 FONT = 'C:/Windows/Fonts/NotoSansKR-VF.ttf'
 SCENES = json.loads((WORK / 'timing.json').read_text(encoding='utf-8'))
-STEM = 'carepick_final'
+STEM = 'healthpick_final'
 
 
 def ff(*args):
@@ -282,7 +282,7 @@ def main():
     hl_start = next(s['start'] for s in SCENES if s['id'] == 'a04')
     ff('-ss', hl_start, '-t', 60, '-i', final, '-vf', 'scale=1280:-2,fade=t=in:st=0:d=0.4,fade=t=out:st=59.2:d=0.8',
        '-af', 'afade=t=in:st=0:d=0.4,afade=t=out:st=59.2:d=0.8', '-c:v', 'libx264', '-preset', 'slow', '-b:v', '1000k',
-       '-maxrate', '2000k', '-bufsize', '4000k', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', OUT / 'carepick_highlight.mp4')
+       '-maxrate', '2000k', '-bufsize', '4000k', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', OUT / 'healthpick_highlight.mp4')
     thumb_t = next(s['start'] for s in SCENES if s['id'] == 'a07') + 9
     ff('-ss', thumb_t, '-i', final, '-frames:v', 1, OUT / 'video-thumbnail.png')
     print('final:', final, f'{final.stat().st_size / 1e6:.1f} MB', '| captions:', len(caps))

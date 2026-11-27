@@ -26,7 +26,7 @@ const navItems = [
 ]
 const roleLabels = { user: '일반 사용자', admin: '관리자', viewer: '테스트 관리자' }
 const MEAL_TYPES = ['아침', '점심', '저녁', '간식']
-const REPO = 'https://github.com/fsclass-n/vitapick'
+const REPO = 'https://github.com/fsclass-n/healthpick'
 const PHOTOS = [
   ['hero-bowl.jpg', 'Anna Pelzer', 'IGfIGP5ONV0'], ['colorful-bowl.jpg', 'Metin Ozer', 'Dmhjy9fDTKw'],
   ['avocado-bowl.jpg', 'Hermes Rivera', 'OzBLe_Eg1mg'], ['green-salad.jpg', 'sina piryae', 'bBzjWthTqb8'], ['salad-table.jpg', 'Roland Suciu', 'LlvSGfe0oSQ'],
@@ -55,8 +55,8 @@ function Logo() {
   </svg>
 }
 function Brand({ light = false }) {
-  return <Link to="/" className={`brand ${light ? 'brand-light' : ''}`} aria-label="비타픽 홈">
-    <Logo /><span className="brand-text"><span className="brand-word">vita<b>pick</b></span><small>HEALTH · NUTRITION</small></span>
+  return <Link to="/" className={`brand ${light ? 'brand-light' : ''}`} aria-label="헬스픽 홈">
+    <Logo /><span className="brand-text"><span className="brand-word">health<b>pick</b></span><small>HEALTH · NUTRITION</small></span>
   </Link>
 }
 function Pulse({ className = '' }) {
@@ -66,14 +66,14 @@ function Pulse({ className = '' }) {
 }
 
 function App() {
-  const [token, setToken] = useState(() => sessionStorage.getItem('vitapick_token'))
+  const [token, setToken] = useState(() => sessionStorage.getItem('healthpick_token'))
   const [user, setUser] = useState(null)
   const [drawer, setDrawer] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem('vitapick_token')
+    sessionStorage.removeItem('healthpick_token')
     setToken(null)
     setUser(null)
     navigate('/')
@@ -99,7 +99,7 @@ function App() {
   }, [drawer])
 
   const signedIn = useCallback((result) => {
-    sessionStorage.setItem('vitapick_token', result.access_token)
+    sessionStorage.setItem('healthpick_token', result.access_token)
     setToken(result.access_token)
     setUser(result.user)
     navigate('/dashboard', { replace: true })
@@ -160,14 +160,14 @@ function Footer({ signedIn }) {
       : <div className="footer-cta"><div><span className="eyebrow">START YOUR CARE</span><h2>오늘 먹은 한 끼부터, 나의 건강 기록을 시작하세요.</h2></div><Link className="button button-light" to="/login?mode=register">무료로 시작하기 <Icon icon={faArrowRight} /></Link></div>}
     <div className="footer-grid">
       <div className="footer-brand"><Brand light /><p>공공데이터 식품영양성분 DB와 개인 신체 정보를 바탕으로 하루 영양 목표를 계산하고, 식단 기록을 건강 리포트로 바꿔 주는 헬스케어 플랫폼입니다.</p>
-        <div className="footer-social"><a href={REPO} target="_blank" rel="noopener" aria-label="GitHub 저장소"><Icon icon={faGithub} /></a><a href="https://fsclass-n.github.io/vitapick/" target="_blank" rel="noopener" aria-label="포트폴리오"><Icon icon={faBookMedical} /></a><a href={`${REPO}/issues`} target="_blank" rel="noopener" aria-label="문의하기"><Icon icon={faEnvelope} /></a></div></div>
+        <div className="footer-social"><a href={REPO} target="_blank" rel="noopener" aria-label="GitHub 저장소"><Icon icon={faGithub} /></a><a href="https://fsclass-n.github.io/healthpick/" target="_blank" rel="noopener" aria-label="포트폴리오"><Icon icon={faBookMedical} /></a><a href={`${REPO}/issues`} target="_blank" rel="noopener" aria-label="문의하기"><Icon icon={faEnvelope} /></a></div></div>
       <div><h4>서비스</h4><Link to="/dashboard">건강 대시보드</Link><Link to="/journal">AI 식단 기록</Link><Link to="/insights">영양 리포트</Link><Link to="/insights#goal">맞춤 목표 설정</Link></div>
       <div><h4>데이터 · 기술</h4><a href="https://www.data.go.kr/data/15127578/openapi.do" target="_blank" rel="noopener">식품영양성분 DB 출처 <Icon icon={faArrowUpRightFromSquare} /></a><a href={docs} target="_blank" rel="noopener">API 문서 <Icon icon={faArrowUpRightFromSquare} /></a><a href={`${apiBase}/api/health`} target="_blank" rel="noopener">서비스 상태 <Icon icon={faArrowUpRightFromSquare} /></a></div>
       <div><h4>고객 지원</h4><Link to="/policy#privacy">개인정보 처리 안내</Link><Link to="/policy#terms">서비스 이용 안내</Link><Link to="/policy#ai">AI 기능 안내</Link><a href={`${REPO}/issues`} target="_blank" rel="noopener">문의 · 오류 신고 <Icon icon={faArrowUpRightFromSquare} /></a></div>
     </div>
-    <div className="footer-notice"><Icon icon={faStethoscope} /><p><strong>의료 안내</strong> vitapick의 목표치와 분석 결과는 일반적인 공식과 공공데이터로 계산한 참고 정보이며, 의사·영양사의 진단이나 처방을 대신하지 않습니다. 질환, 임신, 식이 제한이 있다면 전문가와 상담하세요.</p></div>
+    <div className="footer-notice"><Icon icon={faStethoscope} /><p><strong>의료 안내</strong> healthpick의 목표치와 분석 결과는 일반적인 공식과 공공데이터로 계산한 참고 정보이며, 의사·영양사의 진단이나 처방을 대신하지 않습니다. 질환, 임신, 식이 제한이 있다면 전문가와 상담하세요.</p></div>
     <div className="footer-bottom">
-      <span>© {new Date().getFullYear()} vitapick · 개발 박미금 · 김모란 · 이오리(조장) · 홍기흥 · 4인 팀 프로젝트</span>
+      <span>© {new Date().getFullYear()} healthpick · 개발 박미금 · 김모란 · 이오리(조장) · 홍기흥 · 4인 팀 프로젝트</span>
       <span className="credits">Photos by {PHOTOS.map(([, n, id], i) => <a key={id} href={`https://unsplash.com/photos/${id}`} target="_blank" rel="noopener">{n}{i < PHOTOS.length - 1 ? ', ' : ''}</a>)} on Unsplash</span>
       <button className="top-button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="맨 위로 이동"><Icon icon={faArrowUp} /></button>
     </div>
@@ -633,7 +633,7 @@ function Policy() {
   const location = useLocation()
   useEffect(() => { if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' }), 100) }, [location.hash])
   return <div className="app-page"><div className="container policy">
-    <PageHeading tag="POLICY" title="개인정보 · 서비스 이용 안내" description="vitapick이 어떤 정보를 어떻게 다루는지 실제 구현 그대로 안내합니다." icon={faFileShield} />
+    <PageHeading tag="POLICY" title="개인정보 · 서비스 이용 안내" description="healthpick이 어떤 정보를 어떻게 다루는지 실제 구현 그대로 안내합니다." icon={faFileShield} />
     <section className="panel" id="privacy"><h3><Icon icon={faLock} /> 개인정보 처리 안내</h3><ul>
       <li><b>수집 항목</b> 이메일, 이름, 비밀번호(Argon2 해시로만 저장), 소셜 로그인 식별자, 선택 입력한 나이·성별·키·몸무게·활동량, 식단 기록</li>
       <li><b>이용 목적</b> 로그인, 개인 영양 목표 계산, 식단 리포트 제공. 광고나 제3자 판매에 쓰지 않습니다.</li>

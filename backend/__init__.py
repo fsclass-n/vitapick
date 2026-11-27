@@ -1,1 +1,1 @@
-"""Vitapick API."""
+"""Healthpick API."""

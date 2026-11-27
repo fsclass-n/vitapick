@@ -14,7 +14,7 @@ FF = imageio_ffmpeg.get_ffmpeg_exe()
 WORK, OUT = Path(sys.argv[1]), Path(sys.argv[2])
 SEGMENTS = ['d04', 'd06', 'd07', 'd11', 'a02', 'a03', 'a04', 'a05', 'a07']
 scenes = {s['id']: s for s in json.loads((WORK / 'timing.json').read_text(encoding='utf-8'))}
-src, dst = OUT / 'carepick_final.mp4', OUT / 'carepick_highlight_3min.mp4'
+src, dst = OUT / 'healthpick_final.mp4', OUT / 'healthpick_highlight_3min.mp4'
 
 parts, total, chapters = [], 0.0, []
 for i, sid in enumerate(SEGMENTS):

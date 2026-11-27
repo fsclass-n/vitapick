@@ -64,12 +64,12 @@ def test_auth_policy_and_private_meals(client):
 def test_netlify_origin_can_call_api(client):
     web, _ = client
     response = web.options("/api/meals", headers={
-        "Origin": "https://vitapick.netlify.app",
+        "Origin": "https://healthpick.netlify.app",
         "Access-Control-Request-Method": "POST",
         "Access-Control-Request-Headers": "authorization,content-type",
     })
     assert response.status_code == 200
-    assert response.headers["access-control-allow-origin"] == "https://vitapick.netlify.app"
+    assert response.headers["access-control-allow-origin"] == "https://healthpick.netlify.app"
 
 
 def test_admin_role_change_is_enforced_server_side(client):
@@ -240,7 +240,7 @@ def test_demo_accounts_work_in_production_and_demo_admin_is_read_only(client, mo
 
     # Demo admin is restored to read-only even if someone promoted it.
     with session() as db:
-        db.query(User).filter_by(email="demo-admin@vitapick.local").one().role = "admin"
+        db.query(User).filter_by(email="demo-admin@healthpick.local").one().role = "admin"
         db.commit()
     assert web.post("/api/auth/demo-login", json={"role": "admin"}).json()["user"]["role"] == "viewer"
 
@@ -376,5 +376,5 @@ def test_admin_can_delete_member_but_not_self_or_demo(client, monkeypatch):
     monkeypatch.setattr(main, "demo_enabled", True)
     web.post("/api/auth/demo-login", json={"role": "user"})
     with session() as db:
-        demo_id = db.query(User).filter_by(email="demo-user@vitapick.local").one().id
+        demo_id = db.query(User).filter_by(email="demo-user@healthpick.local").one().id
     assert web.delete(f"/api/admin/users/{demo_id}", headers=admin).status_code == 400
