@@ -130,8 +130,8 @@ h1,h2,h3,h4,p{margin-top:0}::selection{background:var(--mint);color:var(--ink)}:
 .trust-list strong{display:block;font-size:15px;margin-bottom:4px}.trust-list span{font-size:13.5px;color:var(--muted);line-height:1.7}
 
 /* ---------- auth ---------- */
-.segmented{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:22px}
-.segmented button{border:0;background:transparent;padding:11px;border-radius:10px;font-weight:700;color:#6f8784;display:inline-flex;justify-content:center;gap:8px;align-items:center}
+.segmented{display:grid;grid-template-columns:repeat(3,1fr);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:22px}
+.segmented button{border:0;background:transparent;padding:11px 4px;border-radius:10px;font-weight:700;color:#6f8784;display:inline-flex;justify-content:center;gap:6px;align-items:center;font-size:14px}
 .segmented button.selected{background:#fff;color:var(--teal-d);box-shadow:0 2px 10px #0e2a2d14}
 .meal-form label,.draft-fields label{display:block;font-size:13px;font-weight:700;color:#35504d}
 .meal-form input,.meal-form select,.admin-panel select,.draft-fields input,.draft-fields select,.draft-nutrients input{display:block;width:100%;height:48px;margin-top:8px;border:1.5px solid var(--line);background:#fbfdfd;border-radius:12px;padding:0 14px;color:var(--ink);outline:none;font-size:14px;transition:border-color .2s,box-shadow .2s}
@@ -362,4 +362,4 @@ td{border-bottom:1px solid #eef4f3;padding:14px 16px;color:#35504d}
   .draft-fields{grid-template-columns:1fr 1fr}.draft-fields .wide{grid-column:span 2}.draft-fields label:last-child{grid-column:span 2}.draft-nutrients{grid-template-columns:repeat(2,1fr)}.draft-total .button{width:100%}
   .report-banner{flex-direction:column;align-items:flex-start;padding:24px}.donut-wrap{flex-direction:column;align-items:stretch}.donut{margin:auto}
   .profile-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-fields label:last-child{grid-column:span 2}.profile-result .button{width:100%}.insight-callout{flex-wrap:wrap}.role-stats{gap:10px}}
-@media(max-width:430px){.stat-grid{gap:10px}.stat-value small{display:block;margin-top:4px}.form-three{gap:6px}.form-three input{padding:0 8px}.composer-bar{flex-wrap:wrap}.composer-bar .button{width:100%}.char-count{margin-left:auto}}
+@media(max-width:430px){.stat-grid{gap:10px}.stat-value small{display:block;margin-top:4px}.form-three{gap:6px}.form-three input{padding:0 8px}.composer-bar{flex-wrap:wrap}.composer-bar .button{width:100%}.char-count{margin-left:auto}.segmented button{font-size:12px;gap:4px;padding:10px 2px}}
