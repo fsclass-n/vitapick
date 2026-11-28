@@ -185,6 +185,16 @@ input::placeholder,textarea::placeholder{color:#9fb3b0}
 .photo-attach-button:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-l)}
 .photo-attach-button svg{font-size:18px}.photo-attach-button span{display:flex;flex-direction:column;gap:2px}.photo-attach-button small{font-weight:400;color:#86a09c}
 .photo-preview{width:56px;height:56px;border-radius:14px;object-fit:cover;border:1px solid var(--line)}
+.heic-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--teal-l);color:var(--teal);font-size:11px;font-weight:700}
+.heic-preview svg{font-size:18px}
+.photo-hero.heic-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:180px;background:var(--teal-l);color:var(--teal)}
+.photo-hero.heic-hero svg{font-size:36px}.photo-hero.heic-hero span{font-size:14px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px}.photo-hero.heic-hero small{font-weight:400;color:#5a7a75}
+.photo-attach-button.jumbo{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:34px 18px;text-align:center}
+.photo-attach-button.jumbo svg{font-size:30px;color:var(--teal)}.photo-attach-button.jumbo span{font-size:15px}.photo-attach-button.jumbo small{font-size:12px}
+.photo-stage{position:relative}.photo-hero{width:100%;max-height:280px;object-fit:cover;border-radius:16px;border:1px solid var(--line);display:block}
+.photo-again{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:0;border-radius:10px;background:rgba(8,28,26,.72);color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.photo-again:hover{background:rgba(8,28,26,.9)}.photo-again:disabled{opacity:.6}
+.photo-analyzing{position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:10px;background:rgba(20,160,143,.9);color:#fff;font-size:12px;font-weight:700}
 .panel>.button-soft{width:100%;margin-top:18px}
 .care-note-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#fdecec;color:var(--heart)}
 .macro-split{display:grid;gap:14px;margin-bottom:18px}.split-row{display:grid;grid-template-columns:62px 1fr 92px;gap:12px;align-items:center;font-size:13px;font-weight:700}

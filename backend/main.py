@@ -25,7 +25,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .db import Base, SessionLocal, engine, get_db
-from .meal_parser import parse_meal_text
+from .meal_parser import parse_meal_photo, parse_meal_text
 from .models import Food, Meal, OAuthTicket, User, utc_now
 
 env = os.getenv("APP_ENV", "development")
@@ -124,11 +124,17 @@ class MealInput(BaseModel):
     protein: float = Field(ge=0, le=10000, allow_inf_nan=False)
     carbs: float = Field(ge=0, le=10000, allow_inf_nan=False)
     fat: float = Field(ge=0, le=10000, allow_inf_nan=False)
-    photo: str | None = Field(default=None, max_length=2_900_000)
+    photo: str | None = Field(default=None, max_length=12_000_000)
 
 
 class PhotoInput(BaseModel):
-    photo: str = Field(min_length=1, max_length=2_900_000)
+    photo: str = Field(min_length=1, max_length=12_000_000)
+
+
+class PhotoParseInput(BaseModel):
+    photo: str = Field(min_length=1, max_length=12_000_000)
+    today: date | None = None
+    hour: int | None = Field(default=None, ge=0, le=23)
 
 
 class Withdrawal(BaseModel):
@@ -296,6 +302,8 @@ def demo_login(payload: DemoLogin, db: Session = Depends(get_db)):
 
 
 PHOTO_MAX_BYTES = 2_000_000
+HEIC_MAX_BYTES = 8_000_000
+HEIC_BRANDS = {b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"hevm", b"hevs", b"mif1", b"msf1"}
 
 
 def sniff_mime(blob: bytes):
@@ -308,6 +316,30 @@ def sniff_mime(blob: bytes):
     return None
 
 
+def is_heic(blob: bytes):
+    return len(blob) > 12 and blob[4:8] == b"ftyp" and blob[8:12] in HEIC_BRANDS
+
+
+def heic_to_png(blob: bytes):
+    try:
+        import io
+
+        from pillow_heif import register_heif_opener
+        from PIL import Image
+    except ImportError:
+        raise HTTPException(status_code=503, detail="HEIC 사진 변환을 지원하지 않는 서버입니다.")
+    try:
+        register_heif_opener()
+        image = Image.open(io.BytesIO(blob)).convert("RGB")
+        image.thumbnail((1600, 1600))
+        buffer = io.BytesIO()
+        image.save(buffer, "PNG")
+    except Exception as error:
+        logger.warning("HEIC conversion failed: %s", type(error).__name__)
+        raise HTTPException(status_code=422, detail="HEIC 사진을 읽을 수 없습니다.")
+    return buffer.getvalue()
+
+
 def decode_photo(raw: str | None):
     if not raw:
         return None, None
@@ -318,11 +350,15 @@ def decode_photo(raw: str | None):
         blob = base64.b64decode(payload, validate=True)
     except (binascii.Error, ValueError):
         raise HTTPException(status_code=422, detail="사진 형식을 확인해 주세요.")
-    if not blob or len(blob) > PHOTO_MAX_BYTES:
-        raise HTTPException(status_code=422, detail="사진은 2MB 이하로 첨부해 주세요.")
+    if not blob or len(blob) > HEIC_MAX_BYTES:
+        raise HTTPException(status_code=422, detail="사진은 8MB 이하로 첨부해 주세요.")
     mime = sniff_mime(blob)
     if mime is None:
-        raise HTTPException(status_code=422, detail="JPG, PNG, WebP 사진만 첨부할 수 있습니다.")
+        if is_heic(blob):
+            return heic_to_png(blob), "image/png"
+        raise HTTPException(status_code=422, detail="JPG, PNG, WebP, HEIC 사진만 첨부할 수 있습니다.")
+    if len(blob) > PHOTO_MAX_BYTES:
+        raise HTTPException(status_code=422, detail="사진은 2MB 이하로 첨부해 주세요.")
     return blob, mime
 
 
@@ -418,17 +454,36 @@ def delete_meal_photo(meal_id: int, user: User = Depends(current_user), db: Sess
     db.commit()
 
 
-@app.post("/api/meals/parse")
-def parse_meal(payload: MealText, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def check_parse_limit(user: User):
     history, now = parse_history[user.id], time.monotonic()
     while history and now - history[0] > PARSE_WINDOW:
         history.popleft()
     if len(history) >= PARSE_LIMIT:
-        raise HTTPException(status_code=429, detail="문장 분석 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.")
+        raise HTTPException(status_code=429, detail="분석 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.")
     history.append(now)
+
+
+@app.post("/api/meals/parse")
+def parse_meal(payload: MealText, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    check_parse_limit(user)
     result = parse_meal_text(db, payload.text.strip(), payload.today or date.today(), payload.hour if payload.hour is not None else datetime.now().hour)
     if not result["items"]:
         raise HTTPException(status_code=422, detail="문장에서 음식을 찾지 못했습니다. 예: 어제 점심에 비빔밥 한 그릇 먹었어")
+    return result
+
+
+@app.post("/api/meals/photo/parse")
+def parse_meal_photo_endpoint(payload: PhotoParseInput, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    check_parse_limit(user)
+    blob, mime = decode_photo(payload.photo)
+    result = parse_meal_photo(db, base64.b64encode(blob).decode(), mime,
+                              payload.today or date.today(), payload.hour if payload.hour is not None else datetime.now().hour)
+    if result is None:
+        status_code = 503 if not os.getenv("GEMINI_API_KEY") else 422
+        detail = "사진 분석을 사용할 수 없습니다. 관리자에게 문의해 주세요." if status_code == 503 else "사진 분석에 실패했습니다. 잠시 후 다시 시도해 주세요."
+        raise HTTPException(status_code=status_code, detail=detail)
+    if not result["items"]:
+        raise HTTPException(status_code=422, detail="사진에서 음식을 찾지 못했습니다. 다른 사진으로 시도해 주세요.")
     return result
 
 

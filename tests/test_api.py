@@ -89,6 +89,25 @@ def test_meal_photo_attachment(client):
     assert web.get(f"/api/meals/{meal_id}/photo", headers=first).status_code == 404
 
 
+def test_heic_photo_is_converted_to_png(client, monkeypatch):
+    web, _ = client
+    headers = register(web, "heic@example.com")
+    fake_heic = b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1" + b"\x00" * 32
+    data_url = "data:image/heic;base64," + __import__("base64").b64encode(fake_heic).decode()
+
+    converted = []
+    png_bytes = __import__("base64").b64decode(PNG_1PX.split(",", 1)[1])
+    monkeypatch.setattr(main, "heic_to_png", lambda blob: converted.append(blob) or png_bytes)
+    meal = web.post("/api/meals", headers=headers, json={
+        "food_name": "현미밥", "meal_type": "점심", "eaten_at": "2026-11-16",
+        "serving_g": 150, "calories": 220, "protein": 4, "carbs": 45, "fat": 1, "photo": data_url,
+    })
+    assert meal.status_code == 201
+    assert converted == [fake_heic]
+    photo = web.get(f'/api/meals/{meal.json()["id"]}/photo', headers=headers)
+    assert photo.status_code == 200 and photo.headers["content-type"] == "image/png" and photo.content == png_bytes
+
+
 def test_netlify_origin_can_call_api(client):
     web, _ = client
     response = web.options("/api/meals", headers={
@@ -341,6 +360,35 @@ def test_gemini_structures_the_sentence_and_falls_back_to_rules(client, monkeypa
     monkeypatch.setattr(meal_parser.httpx, "post", broken_post)
     fallback = web.post("/api/meals/parse", headers=headers, json={"text": "현미밥 한 공기", "today": "2026-11-25", "hour": 12}).json()
     assert fallback["engine"] == "rules" and fallback["items"][0]["serving_g"] == 210
+
+
+def test_meal_photo_is_analyzed_by_gemini(client, monkeypatch):
+    web, session = client
+    add_foods(session)
+    headers = register(web, "vision@example.com")
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    assert web.post("/api/meals/photo/parse", headers=headers, json={"photo": PNG_1PX}).status_code == 503
+    assert web.post("/api/meals/photo/parse", headers=headers, json={"photo": "data:text/plain;base64,aGVsbG8="}).status_code == 422
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    calls = []
+
+    class Reply:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            items = [{"food_name": "현미밥", "meal_type": "점심", "eaten_at": "2026-11-28", "serving_g": 210,
+                      "serving_estimated": True, "keywords": ["현미밥"], "calories": 9999}]
+            return {"candidates": [{"content": {"parts": [{"text": json.dumps({"items": items})}]}}]}
+
+    monkeypatch.setattr(meal_parser.httpx, "post", lambda *a, **k: calls.append(k["json"]) or Reply())
+    result = web.post("/api/meals/photo/parse", headers=headers, json={"photo": PNG_1PX, "today": "2026-11-28", "hour": 12}).json()
+    image_part = calls[0]["contents"][0]["parts"][0]
+    assert image_part["inline_data"]["mime_type"] == "image/png"
+    item = result["items"][0]
+    assert result["engine"] == "gemini" and item["food_name"] == "현미밥"
+    assert item["nutrients"]["calories"] == 315.0  # from the DB, not the model's 9999
 
 
 def test_withdraw_requires_password_and_removes_user_data(client):

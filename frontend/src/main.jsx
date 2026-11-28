@@ -35,6 +35,27 @@ const today = () => new Date().toLocaleDateString('sv-SE')
 const formatNumber = (number) => Number(number || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 })
 const scaled = (food, grams) => Object.fromEntries(['calories', 'protein', 'carbs', 'fat'].map((k) => [k, Math.round(food[k] * Number(grams || 0) / 10) / 10]))
 
+function isHeicFile(file) {
+  return /heic|heif/i.test(file.type || '') || /\.(heic|heif)$/i.test(file.name || '')
+}
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(new Error('사진을 읽을 수 없습니다.'))
+    reader.readAsDataURL(file)
+  })
+}
+// Resized JPEG for normal photos; raw passthrough for HEIC, which the server converts to PNG.
+async function pickMealPhoto(file) {
+  try {
+    return { dataUrl: await fileToMealPhoto(file), heic: false }
+  } catch (error) {
+    if (!isHeicFile(file)) throw error
+    return { dataUrl: await fileToDataUrl(file), heic: true }
+  }
+}
+
 // Downscale a phone photo to a JPEG data URL small enough to store with the meal (max 1280px, q0.82).
 function fileToMealPhoto(file) {
   return new Promise((resolve, reject) => {
@@ -405,8 +426,8 @@ function MealRow({ meal, token, onDelete, onChanged, onError }) {
     if (!file) return
     setUploading(true)
     try {
-      const photo = await fileToMealPhoto(file)
-      await api(`/meals/${meal.id}/photo`, { token, method: 'PUT', body: JSON.stringify({ photo }) })
+      const picked = await pickMealPhoto(file)
+      await api(`/meals/${meal.id}/photo`, { token, method: 'PUT', body: JSON.stringify({ photo: picked.dataUrl }) })
       onChanged?.()
     } catch (err) { onError?.(err.message) } finally { setUploading(false) }
   }
@@ -476,6 +497,18 @@ function DraftCard({ draft, onChange, onRemove }) {
     {!draft.food && <p className="draft-help">공공데이터에서 같은 음식을 찾지 못했어요. 비슷한 음식을 고르거나 영양값을 직접 입력해 주세요.</p>}
   </article>
 }
+function DraftReview({ drafts, saving, onSave, onChange, onRemove }) {
+  const total = totalsFor(drafts)
+  return <>
+    <div className="draft-list">{drafts.map((d) => <DraftCard key={d.key} draft={d} onChange={(next) => onChange(d.key, next)} onRemove={() => onRemove(d.key)} />)}</div>
+    <div className="draft-total"><span>합계</span>{nutrients.map(({ key, label, unit }) => <b key={key}>{label} {formatNumber(total[key])}{unit}</b>)}<button className="button button-primary" disabled={saving} onClick={onSave}><Icon icon={faCheck} /> {saving ? '저장 중...' : `${drafts.length}개 모두 기록`}</button></div>
+  </>
+}
+function saveDrafts(token, drafts, photo) {
+  return drafts.reduce((chain, d) => chain.then(() =>
+    api('/meals', { token, method: 'POST', body: JSON.stringify({ food_name: d.food_name, meal_type: d.meal_type, eaten_at: d.eaten_at, serving_g: Number(d.serving_g), calories: Number(d.calories || 0), protein: Number(d.protein || 0), carbs: Number(d.carbs || 0), fat: Number(d.fat || 0), photo }) })
+  ), Promise.resolve())
+}
 function AiComposer({ token, onSaved, initialText }) {
   const [text, setText] = useState(initialText || '')
   const [engine, setEngine] = useState(null)
@@ -497,13 +530,10 @@ function AiComposer({ token, onSaved, initialText }) {
   async function saveAll() {
     setSaving(true); setError('')
     try {
-      for (const d of drafts) {
-        await api('/meals', { token, method: 'POST', body: JSON.stringify({ food_name: d.food_name, meal_type: d.meal_type, eaten_at: d.eaten_at, serving_g: Number(d.serving_g), calories: Number(d.calories || 0), protein: Number(d.protein || 0), carbs: Number(d.carbs || 0), fat: Number(d.fat || 0) }) })
-      }
+      await saveDrafts(token, drafts)
       setDone(`${drafts.length}개의 식사를 기록했어요.`); setDrafts([]); setText(''); onSaved()
     } catch (e) { setError(e.message) } finally { setSaving(false) }
   }
-  const total = totalsFor(drafts)
   return <div className="ai-composer">
     <form onSubmit={(e) => { e.preventDefault(); if (text.trim().length >= 2) analyze(text.trim()) }}>
       <label className="sr-only" htmlFor="meal-text">먹은 음식을 문장으로 입력</label>
@@ -513,11 +543,46 @@ function AiComposer({ token, onSaved, initialText }) {
     <div className="example-chips">{EXAMPLES.map((example) => <button type="button" key={example} onClick={() => { setText(example); analyze(example) }}>{example}</button>)}</div>
     {error && <div className="form-error" role="alert"><Icon icon={faCircleExclamation} /> {error}</div>}
     {done && <p className="save-success" role="status"><Icon icon={faCheck} /> {done}</p>}
-    {drafts.length > 0 && <>
-      <div className="draft-list">{drafts.map((d) => <DraftCard key={d.key} draft={d} onChange={(next) => setDrafts(drafts.map((x) => x.key === d.key ? next : x))} onRemove={() => setDrafts(drafts.filter((x) => x.key !== d.key))} />)}</div>
-      <div className="draft-total"><span>합계</span>{nutrients.map(({ key, label, unit }) => <b key={key}>{label} {formatNumber(total[key])}{unit}</b>)}<button className="button button-primary" disabled={saving} onClick={saveAll}><Icon icon={faCheck} /> {saving ? '저장 중...' : `${drafts.length}개 모두 기록`}</button></div>
-    </>}
+    {drafts.length > 0 && <DraftReview drafts={drafts} saving={saving} onSave={saveAll} onChange={(key, next) => setDrafts(drafts.map((x) => x.key === key ? next : x))} onRemove={(key) => setDrafts(drafts.filter((x) => x.key !== key))} />}
     <p className="form-hint"><Icon icon={faShieldHeart} /> AI는 음식·식사 구분·날짜·섭취량만 나눕니다. 영양값은 공공데이터 100g 기준값 × 섭취량으로 계산합니다.</p>
+  </div>
+}
+function PhotoComposer({ token, onSaved }) {
+  const [photo, setPhoto] = useState(null)
+  const [photoIsHeic, setPhotoIsHeic] = useState(false)
+  const [drafts, setDrafts] = useState([])
+  const [busy, setBusy] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState('')
+  const fileRef = useRef(null)
+  async function pick(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBusy(true); setError(''); setDone(''); setDrafts([])
+    try {
+      const picked = await pickMealPhoto(file)
+      setPhoto(picked.dataUrl); setPhotoIsHeic(picked.heic)
+      const result = await api('/meals/photo/parse', { token, method: 'POST', body: JSON.stringify({ photo: picked.dataUrl, today: today(), hour: new Date().getHours() }) })
+      setDrafts(result.items.map((item, i) => ({ ...item, key: `${Date.now()}-${i}`, ...(item.nutrients || {}) })))
+    } catch (err) { setPhoto(null); setPhotoIsHeic(false); setError(err.message) } finally { setBusy(false) }
+  }
+  async function saveAll() {
+    setSaving(true); setError('')
+    try {
+      await saveDrafts(token, drafts, photo)
+      setDone(`${drafts.length}개의 식사를 기록했어요.`); setDrafts([]); setPhoto(null); onSaved()
+    } catch (e) { setError(e.message) } finally { setSaving(false) }
+  }
+  return <div className="ai-composer photo-composer">
+    <input ref={fileRef} type="file" accept="image/*" hidden onChange={pick} />
+    {photo ? <div className="photo-stage">{photoIsHeic ? <div className="photo-hero heic-hero"><Icon icon={faCamera} /><span>HEIC 사진 첨부됨<small>저장·분석 시 PNG로 자동 변환됩니다</small></span></div> : <img className="photo-hero" src={photo} alt="분석할 식사 사진" />}{busy && <span className="photo-analyzing"><Icon icon={faSpinner} spin /> AI 분석 중...</span>}<button type="button" className="photo-again" disabled={busy || saving} onClick={() => { setPhoto(null); setPhotoIsHeic(false); setDrafts([]); fileRef.current?.click() }}><Icon icon={faCamera} /> 다른 사진</button></div>
+      : <button type="button" className="photo-attach-button jumbo" disabled={busy} onClick={() => fileRef.current?.click()}><Icon icon={busy ? faSpinner : faCamera} spin={busy} /><span>{busy ? '사진 분석 중...' : '식사 사진 선택'}<small>스마트폰으로 찍은 사진을 첨부하면 AI가 음식과 양을 파악해요</small></span></button>}
+    {error && <div className="form-error" role="alert"><Icon icon={faCircleExclamation} /> {error}</div>}
+    {done && <p className="save-success" role="status"><Icon icon={faCheck} /> {done}</p>}
+    {drafts.length > 0 && <DraftReview drafts={drafts} saving={saving} onSave={saveAll} onChange={(key, next) => setDrafts(drafts.map((x) => x.key === key ? next : x))} onRemove={(key) => setDrafts(drafts.filter((x) => x.key !== key))} />}
+    <p className="form-hint"><Icon icon={faShieldHeart} /> AI가 사진 속 음식과 대략의 양을 파악하고, 영양값은 공공데이터 100g 기준으로 계산합니다. 사진은 기록에 함께 첨부됩니다.</p>
   </div>
 }
 function ManualForm({ token, onSaved }) {
@@ -528,6 +593,7 @@ function ManualForm({ token, onSaved }) {
   const [query, setQuery] = useState('')
   const [foods, setFoods] = useState([])
   const [photo, setPhoto] = useState(null)
+  const [photoIsHeic, setPhotoIsHeic] = useState(false)
   const photoRef = useRef(null)
   useEffect(() => {
     if (query.trim().length < 2) { setFoods([]); return }
@@ -538,14 +604,17 @@ function ManualForm({ token, onSaved }) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    try { setPhoto(await fileToMealPhoto(file)); setError('') } catch (err) { setError(err.message) }
+    try {
+      const picked = await pickMealPhoto(file)
+      setPhoto(picked.dataUrl); setPhotoIsHeic(picked.heic); setError('')
+    } catch (err) { setError(err.message) }
   }
   async function save(e) {
     e.preventDefault(); setSaving(true); setError('')
     try {
       await api('/meals', { token, method: 'POST', body: JSON.stringify({ ...form, photo, calories: Number(form.calories), protein: Number(form.protein), carbs: Number(form.carbs), fat: Number(form.fat), serving_g: Number(form.serving_g) }) })
       setForm({ ...form, food_name: '', calories: '', protein: '', carbs: '', fat: '' }); setBase(null)
-      setQuery(''); setFoods([]); setPhoto(null); onSaved()
+      setQuery(''); setFoods([]); setPhoto(null); setPhotoIsHeic(false); onSaved()
     } catch (err) { setError(err.message) } finally { setSaving(false) }
   }
   return <form onSubmit={save} className="meal-form">
@@ -556,7 +625,7 @@ function ManualForm({ token, onSaved }) {
     <div className="form-two"><label>섭취량 (g)<input required type="number" min="1" max="10000" step="any" value={form.serving_g} onChange={(e) => setForm({ ...form, serving_g: e.target.value, ...(base ? scaled(base, e.target.value) : {}) })} /></label><label>열량 (kcal)<input required type="number" min="0" max="20000" step="any" placeholder="0" value={form.calories} onChange={(e) => { setBase(null); setForm({ ...form, calories: e.target.value }) }} /></label></div>
     <div className="form-three">{['protein', 'carbs', 'fat'].map((key) => <label key={key}>{nutrients.find((n) => n.key === key).label} (g)<input required type="number" min="0" max="10000" step="any" placeholder="0" value={form[key]} onChange={(e) => { setBase(null); setForm({ ...form, [key]: e.target.value }) }} /></label>)}</div>
     <div className="photo-attach">
-      {photo ? <><img className="photo-preview" src={photo} alt="첨부한 식사 사진 미리보기" /><button type="button" className="delete-button" aria-label="사진 빼기" onClick={() => setPhoto(null)}><Icon icon={faXmark} /></button></>
+      {photo ? <>{photoIsHeic ? <span className="photo-preview heic-preview"><Icon icon={faCamera} /><small>HEIC · PNG 변환</small></span> : <img className="photo-preview" src={photo} alt="첨부한 식사 사진 미리보기" />}<button type="button" className="delete-button" aria-label="사진 빼기" onClick={() => { setPhoto(null); setPhotoIsHeic(false) }}><Icon icon={faXmark} /></button></>
         : <button type="button" className="photo-attach-button" onClick={() => photoRef.current?.click()}><Icon icon={faCamera} /><span>사진 첨부<small>스마트폰으로 찍은 식사 사진 (선택)</small></span></button>}
       <input ref={photoRef} type="file" accept="image/*" hidden onChange={pickPhoto} />
     </div>
@@ -575,8 +644,8 @@ function Journal({ token }) {
   }
   return <div className="app-page"><div className="container"><PageHeading tag="FOOD JOURNAL" title="식단 기록" description="말하듯 적으면 AI가 항목을 나누고, 영양소는 공공데이터로 계산합니다." icon={faUtensils} />
     <div className="journal-grid"><section className="panel"><div className="panel-heading"><div><span className="eyebrow">ADD A MEAL</span><h3>새 식사 기록</h3></div></div>
-      <div className="segmented" role="tablist"><button role="tab" aria-selected={tab === 'ai'} className={tab === 'ai' ? 'selected' : ''} onClick={() => setTab('ai')}><Icon icon={faWandMagicSparkles} /> 문장으로 기록</button><button role="tab" aria-selected={tab === 'manual'} className={tab === 'manual' ? 'selected' : ''} onClick={() => setTab('manual')}><Icon icon={faPenToSquare} /> 직접 입력</button></div>
-      {tab === 'ai' ? <AiComposer token={token} onSaved={refresh} initialText={initialText} /> : <ManualForm token={token} onSaved={refresh} />}</section>
+      <div className="segmented" role="tablist"><button role="tab" aria-selected={tab === 'ai'} className={tab === 'ai' ? 'selected' : ''} onClick={() => setTab('ai')}><Icon icon={faWandMagicSparkles} /> 문장으로 기록</button><button role="tab" aria-selected={tab === 'photo'} className={tab === 'photo' ? 'selected' : ''} onClick={() => setTab('photo')}><Icon icon={faCamera} /> 사진으로 기록</button><button role="tab" aria-selected={tab === 'manual'} className={tab === 'manual' ? 'selected' : ''} onClick={() => setTab('manual')}><Icon icon={faPenToSquare} /> 직접 입력</button></div>
+      {tab === 'ai' ? <AiComposer token={token} onSaved={refresh} initialText={initialText} /> : tab === 'photo' ? <PhotoComposer token={token} onSaved={refresh} /> : <ManualForm token={token} onSaved={refresh} />}</section>
       <section className="panel"><div className="panel-heading"><div><span className="eyebrow">HISTORY</span><h3>기록한 식사 <span className="count-pill">{meals.length}</span></h3></div></div>{error && <div className="form-error" role="alert">{error}</div>}{loading ? <p className="muted">불러오는 중...</p> : meals.length ? <div className="meal-list journal-list">{meals.map((m) => <MealRow key={m.id} meal={m} token={token} onDelete={remove} onChanged={refresh} onError={setError} />)}</div> : <EmptyState text="아직 기록이 없어요. 첫 식사를 추가해 보세요." />}</section></div>
     <p className="medical-note"><Icon icon={faCircleExclamation} /> 공공데이터 수치는 100g 기준이며 제조사·조리법에 따라 달라질 수 있습니다.</p>
   </div></div>

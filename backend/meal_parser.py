@@ -139,25 +139,33 @@ GEMINI_INSTRUCTION = (
 )
 
 
-def gemini_parse(text: str, today: date, hour: int):
+PHOTO_INSTRUCTION = (
+    "너는 식사 사진을 구조화하는 도우미다. 사진에 보이는 음식마다 항목을 하나씩 만든다. "
+    "음식 이름은 한국어로, 수량·조사 없이 쓴다. 영양값(열량·단백질·탄수화물·지방)은 절대 만들지 않는다. "
+    "eaten_at은 기준일을 그대로 쓴다. 식사 구분은 아침/점심/저녁/간식 중 하나이며, 애매하면 기준 시각으로 고른다. "
+    "섭취량은 사진에 보이는 양을 한국 표준 1회 제공량 기준으로 그램으로 추정한다"
+    "(밥 한 공기≈210g, 국·찌개 한 그릇≈400g, 반찬 한 접시≈30~50g, 고기 1인분≈300g). "
+    "keywords에는 식품의약품안전처 식품영양성분DB에서 찾기 쉬운 짧은 이름을 넣는다."
+)
+
+
+def gemini_call(body: dict):
     key = os.getenv("GEMINI_API_KEY")
     if not key:
         return None
     model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-    body = {
-        "systemInstruction": {"parts": [{"text": GEMINI_INSTRUCTION}]},
-        "contents": [{"role": "user", "parts": [{"text": f"기준일: {today.isoformat()} ({hour}시)\n문장: {text}"}]}],
-        "generationConfig": {"temperature": 0, "responseMimeType": "application/json", "responseSchema": GEMINI_SCHEMA},
-    }
     try:
         response = httpx.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                              headers={"x-goog-api-key": key}, json=body, timeout=15)
+                              headers={"x-goog-api-key": key}, json=body, timeout=20)
         response.raise_for_status()
         parts = response.json()["candidates"][0]["content"]["parts"]
-        raw = json.loads("".join(p.get("text", "") for p in parts if not p.get("thought")))["items"]
+        return json.loads("".join(p.get("text", "") for p in parts if not p.get("thought")))["items"]
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as error:
-        logger.warning("Gemini meal parsing failed, using rule parser: %s", type(error).__name__)
+        logger.warning("Gemini meal parsing failed: %s", type(error).__name__)
         return None
+
+
+def shaped_items(raw: list, today: date, hour: int):
     items = []
     for item in raw[:8]:
         try:
@@ -178,6 +186,29 @@ def gemini_parse(text: str, today: date, hour: int):
             "keywords": [str(k).strip() for k in item.get("keywords") or [] if str(k).strip()][:3],
         })
     return items
+
+
+def gemini_parse(text: str, today: date, hour: int):
+    body = {
+        "systemInstruction": {"parts": [{"text": GEMINI_INSTRUCTION}]},
+        "contents": [{"role": "user", "parts": [{"text": f"기준일: {today.isoformat()} ({hour}시)\n문장: {text}"}]}],
+        "generationConfig": {"temperature": 0, "responseMimeType": "application/json", "responseSchema": GEMINI_SCHEMA},
+    }
+    raw = gemini_call(body)
+    return None if raw is None else shaped_items(raw, today, hour)
+
+
+def gemini_parse_photo(image_b64: str, mime: str, today: date, hour: int):
+    body = {
+        "systemInstruction": {"parts": [{"text": PHOTO_INSTRUCTION}]},
+        "contents": [{"role": "user", "parts": [
+            {"inline_data": {"mime_type": mime, "data": image_b64}},
+            {"text": f"기준일: {today.isoformat()} ({hour}시)"},
+        ]}],
+        "generationConfig": {"temperature": 0, "responseMimeType": "application/json", "responseSchema": GEMINI_SCHEMA},
+    }
+    raw = gemini_call(body)
+    return None if raw is None else shaped_items(raw, today, hour)
 
 
 def normalize(name: str) -> str:
@@ -224,11 +255,7 @@ def nutrients_for(food: Food | None, serving_g: float):
     return {key: round(getattr(food, key) * ratio, 1) for key in ("calories", "protein", "carbs", "fat")}
 
 
-def parse_meal_text(db: Session, text: str, today: date, hour: int):
-    items = gemini_parse(text, today, hour)
-    engine = "gemini" if items else "rules"
-    if not items:
-        items = rule_parse(text, today, hour)
+def build_drafts(db: Session, items: list):
     drafts = []
     for item in items:
         best, match, candidates = match_foods(db, item["food_name"], item["keywords"])
@@ -244,4 +271,19 @@ def parse_meal_text(db: Session, text: str, today: date, hour: int):
             "candidates": [food_dict(c) for c in candidates],
             "nutrients": nutrients_for(best, item["serving_g"]),
         })
-    return {"engine": engine, "items": drafts}
+    return drafts
+
+
+def parse_meal_text(db: Session, text: str, today: date, hour: int):
+    items = gemini_parse(text, today, hour)
+    engine = "gemini" if items else "rules"
+    if not items:
+        items = rule_parse(text, today, hour)
+    return {"engine": engine, "items": build_drafts(db, items)}
+
+
+def parse_meal_photo(db: Session, image_b64: str, mime: str, today: date, hour: int):
+    items = gemini_parse_photo(image_b64, mime, today, hour)
+    if items is None:
+        return None
+    return {"engine": "gemini", "items": build_drafts(db, items)}
