@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon as Icon } from '@fortawesome/react-fontawesome'
 import {
   faAppleWhole, faArrowRight, faBolt, faCircleInfo, faRightToBracket, faArrowUp, faArrowUpRightFromSquare, faBookMedical, faBowlRice, faCalculator, faCalendarDays, faChartPie,
   faChartSimple, faCheck, faChevronRight, faCircleCheck, faCircleExclamation, faDatabase, faDroplet, faDrumstickBite, faEnvelope, faEye, faEyeSlash,
-  faFileShield, faFire, faHandHoldingMedical, faHeartPulse, faLock, faNotesMedical, faPenToSquare, faPlus, faServer, faShieldHeart,
+  faCamera, faFileShield, faFire, faHandHoldingMedical, faHeartPulse, faLock, faNotesMedical, faPenToSquare, faPlus, faServer, faShieldHeart,
   faSpinner, faStethoscope, faTrashCan, faTriangleExclamation, faUser, faUserShield, faUsers, faUserXmark, faUtensils, faWandMagicSparkles, faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { faGithub, faGoogle } from '@fortawesome/free-brands-svg-icons'
@@ -34,6 +34,44 @@ const PHOTOS = [
 const today = () => new Date().toLocaleDateString('sv-SE')
 const formatNumber = (number) => Number(number || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 })
 const scaled = (food, grams) => Object.fromEntries(['calories', 'protein', 'carbs', 'fat'].map((k) => [k, Math.round(food[k] * Number(grams || 0) / 10) / 10]))
+
+// Downscale a phone photo to a JPEG data URL small enough to store with the meal (max 1280px, q0.82).
+function fileToMealPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const fail = () => reject(new Error('사진을 읽을 수 없습니다. JPG 또는 PNG로 변환해 주세요.'))
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, 1280 / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(img.width * scale))
+        canvas.height = Math.max(1, Math.round(img.height * scale))
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.82))
+      }
+      img.onerror = fail
+      img.src = reader.result
+    }
+    reader.onerror = fail
+    reader.readAsDataURL(file)
+  })
+}
+
+function useMealPhotoUrl(token, meal) {
+  const [url, setUrl] = useState(null)
+  useEffect(() => {
+    setUrl(null)
+    if (!token || !meal.has_photo) return undefined
+    let alive = true, objectUrl
+    fetch(`${apiBase}/api/meals/${meal.id}/photo`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.blob() : null))
+      .then((blob) => { if (alive && blob) { objectUrl = URL.createObjectURL(blob); setUrl(objectUrl) } })
+      .catch(() => {})
+    return () => { alive = false; if (objectUrl) URL.revokeObjectURL(objectUrl) }
+  }, [token, meal.id, meal.has_photo])
+  return url
+}
 
 // Share of energy from carbs/protein/fat compared with the 50:20:30 target split (reference indicator, not a diagnosis).
 function balanceScore(totals) {
@@ -357,8 +395,24 @@ function ScoreRing({ balance, size = 'large' }) {
     <div><strong>{balance ? value : '—'}</strong><span>{balance ? '/ 100' : '기록 전'}</span></div>
   </div>
 }
-function MealRow({ meal, onDelete }) {
-  return <div className="meal-row"><span className={`meal-icon meal-${MEAL_TYPES.indexOf(meal.meal_type)}`}><Icon icon={meal.meal_type === '간식' ? faAppleWhole : faUtensils} /></span><div><strong>{meal.food_name}</strong><small>{meal.eaten_at} · {meal.meal_type} · {formatNumber(meal.serving_g)}g</small><small>단백질 {formatNumber(meal.protein)}g · 탄수화물 {formatNumber(meal.carbs)}g · 지방 {formatNumber(meal.fat)}g</small></div><b>{formatNumber(meal.calories)}<small> kcal</small></b>{onDelete && <button className="delete-button" aria-label={`${meal.food_name} 기록 삭제`} onClick={() => onDelete(meal.id)}><Icon icon={faTrashCan} /></button>}</div>
+function MealRow({ meal, token, onDelete, onChanged, onError }) {
+  const photoUrl = useMealPhotoUrl(token, meal)
+  const fileRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+  async function attach(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    try {
+      const photo = await fileToMealPhoto(file)
+      await api(`/meals/${meal.id}/photo`, { token, method: 'PUT', body: JSON.stringify({ photo }) })
+      onChanged?.()
+    } catch (err) { onError?.(err.message) } finally { setUploading(false) }
+  }
+  return <div className="meal-row">
+    {photoUrl ? <a className="meal-photo" href={photoUrl} target="_blank" rel="noopener" aria-label={`${meal.food_name} 사진 크게 보기`}><img src={photoUrl} alt={`${meal.food_name} 사진`} /></a>
+      : <span className={`meal-icon meal-${MEAL_TYPES.indexOf(meal.meal_type)}`}><Icon icon={meal.meal_type === '간식' ? faAppleWhole : faUtensils} /></span>}<div><strong>{meal.food_name}</strong><small>{meal.eaten_at} · {meal.meal_type} · {formatNumber(meal.serving_g)}g</small><small>단백질 {formatNumber(meal.protein)}g · 탄수화물 {formatNumber(meal.carbs)}g · 지방 {formatNumber(meal.fat)}g</small></div><b>{formatNumber(meal.calories)}<small> kcal</small></b>{onChanged && <button className="photo-button" aria-label={meal.has_photo ? '사진 바꾸기' : '사진 첨부'} disabled={uploading} onClick={() => fileRef.current?.click()}><Icon icon={uploading ? faSpinner : faCamera} spin={uploading} /></button>}{onDelete && <button className="delete-button" aria-label={`${meal.food_name} 기록 삭제`} onClick={() => onDelete(meal.id)}><Icon icon={faTrashCan} /></button>}<input ref={fileRef} type="file" accept="image/*" hidden onChange={attach} /></div>
 }
 
 function Dashboard({ token, user }) {
@@ -384,7 +438,7 @@ function Dashboard({ token, user }) {
     <form className="quick-ai" onSubmit={(e) => { e.preventDefault(); if (quick.trim().length >= 2) navigate('/journal', { state: { text: quick.trim() } }) }}>
       <span className="quick-icon"><Icon icon={faWandMagicSparkles} /></span><input value={quick} maxLength={300} onChange={(e) => setQuick(e.target.value)} placeholder="무엇을 드셨나요? 예: 점심에 비빔밥 한 그릇이랑 된장찌개 먹었어" aria-label="문장으로 식사 기록" /><button className="button button-primary" type="submit">AI로 기록 <Icon icon={faArrowRight} /></button>
     </form>
-    <div className="content-grid"><section className="panel"><div className="panel-heading"><div><span className="eyebrow">TODAY'S MEALS</span><h3>오늘의 식단</h3></div><Link to="/journal" className="inline-link">전체 보기 <Icon icon={faArrowRight} /></Link></div>{loading ? <p className="muted">불러오는 중...</p> : current.length ? <div className="meal-list">{current.slice(0, 4).map((m) => <MealRow key={m.id} meal={m} />)}</div> : <EmptyState text="아직 기록된 식사가 없어요." />}<Link to="/journal" className="button button-soft"><Icon icon={faPlus} /> 식단 기록하기</Link></section>
+    <div className="content-grid"><section className="panel"><div className="panel-heading"><div><span className="eyebrow">TODAY'S MEALS</span><h3>오늘의 식단</h3></div><Link to="/journal" className="inline-link">전체 보기 <Icon icon={faArrowRight} /></Link></div>{loading ? <p className="muted">불러오는 중...</p> : current.length ? <div className="meal-list">{current.slice(0, 4).map((m) => <MealRow key={m.id} meal={m} token={token} />)}</div> : <EmptyState text="아직 기록된 식사가 없어요." />}<Link to="/journal" className="button button-soft"><Icon icon={faPlus} /> 식단 기록하기</Link></section>
     <section className="panel care-note"><div className="panel-heading"><div><span className="eyebrow">CARE NOTE</span><h3>오늘의 케어 노트</h3></div><span className="care-note-icon"><Icon icon={faNotesMedical} /></span></div>
       {balance ? <div className="macro-split">{[['carbs', '탄수화물', 50], ['protein', '단백질', 20], ['fat', '지방', 30]].map(([k, l, t]) => <div key={k} className={`split-row ${k}`}><span>{l}</span><div><i style={{ width: `${balance.share[k]}%` }} /><b style={{ left: `${t}%` }} /></div><em>{Math.round(balance.share[k])}% <small>목표 {t}%</small></em></div>)}</div> : <div className="care-empty"><Icon icon={faStethoscope} /><p>식사를 기록하면 열량 구성 비율을 목표와 비교해 드려요.</p></div>}
       <p className="care-tip">{!current.length ? '작은 기록이 나만의 건강 패턴을 발견하는 첫걸음입니다.' : totals.protein < targets.protein * 0.5 ? '단백질이 목표의 절반에 못 미쳐요. 달걀, 두부, 생선 같은 식품을 더해 보세요.' : '좋아요! 영양 리포트에서 최근 7일 흐름도 확인해 보세요.'}</p>
@@ -473,17 +527,25 @@ function ManualForm({ token, onSaved }) {
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [foods, setFoods] = useState([])
+  const [photo, setPhoto] = useState(null)
+  const photoRef = useRef(null)
   useEffect(() => {
     if (query.trim().length < 2) { setFoods([]); return }
     const timer = setTimeout(() => api(`/foods?q=${encodeURIComponent(query)}`).then(setFoods).catch(() => setFoods([])), 300)
     return () => clearTimeout(timer)
   }, [query])
+  async function pickPhoto(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try { setPhoto(await fileToMealPhoto(file)); setError('') } catch (err) { setError(err.message) }
+  }
   async function save(e) {
     e.preventDefault(); setSaving(true); setError('')
     try {
-      await api('/meals', { token, method: 'POST', body: JSON.stringify({ ...form, calories: Number(form.calories), protein: Number(form.protein), carbs: Number(form.carbs), fat: Number(form.fat), serving_g: Number(form.serving_g) }) })
+      await api('/meals', { token, method: 'POST', body: JSON.stringify({ ...form, photo, calories: Number(form.calories), protein: Number(form.protein), carbs: Number(form.carbs), fat: Number(form.fat), serving_g: Number(form.serving_g) }) })
       setForm({ ...form, food_name: '', calories: '', protein: '', carbs: '', fat: '' }); setBase(null)
-      setQuery(''); setFoods([]); onSaved()
+      setQuery(''); setFoods([]); setPhoto(null); onSaved()
     } catch (err) { setError(err.message) } finally { setSaving(false) }
   }
   return <form onSubmit={save} className="meal-form">
@@ -493,6 +555,11 @@ function ManualForm({ token, onSaved }) {
     <div className="form-two"><label>식사 구분<select value={form.meal_type} onChange={(e) => setForm({ ...form, meal_type: e.target.value })}>{MEAL_TYPES.map((t) => <option key={t}>{t}</option>)}</select></label><label>날짜<input required type="date" value={form.eaten_at} onChange={(e) => setForm({ ...form, eaten_at: e.target.value })} /></label></div>
     <div className="form-two"><label>섭취량 (g)<input required type="number" min="1" max="10000" step="any" value={form.serving_g} onChange={(e) => setForm({ ...form, serving_g: e.target.value, ...(base ? scaled(base, e.target.value) : {}) })} /></label><label>열량 (kcal)<input required type="number" min="0" max="20000" step="any" placeholder="0" value={form.calories} onChange={(e) => { setBase(null); setForm({ ...form, calories: e.target.value }) }} /></label></div>
     <div className="form-three">{['protein', 'carbs', 'fat'].map((key) => <label key={key}>{nutrients.find((n) => n.key === key).label} (g)<input required type="number" min="0" max="10000" step="any" placeholder="0" value={form[key]} onChange={(e) => { setBase(null); setForm({ ...form, [key]: e.target.value }) }} /></label>)}</div>
+    <div className="photo-attach">
+      {photo ? <><img className="photo-preview" src={photo} alt="첨부한 식사 사진 미리보기" /><button type="button" className="delete-button" aria-label="사진 빼기" onClick={() => setPhoto(null)}><Icon icon={faXmark} /></button></>
+        : <button type="button" className="photo-attach-button" onClick={() => photoRef.current?.click()}><Icon icon={faCamera} /><span>사진 첨부<small>스마트폰으로 찍은 식사 사진 (선택)</small></span></button>}
+      <input ref={photoRef} type="file" accept="image/*" hidden onChange={pickPhoto} />
+    </div>
     <p className="form-hint">{base ? <><Icon icon={faCircleCheck} /> {base.name}의 100g 기준값으로 섭취량에 맞춰 자동 계산 중입니다.</> : '검색 결과를 고르면 섭취량에 맞춰 영양값이 자동 계산됩니다.'}</p>
     <button disabled={saving} className="button button-primary form-submit" type="submit"><Icon icon={faPlus} /> {saving ? '저장 중...' : '기록 추가하기'}</button>
   </form>
@@ -510,7 +577,7 @@ function Journal({ token }) {
     <div className="journal-grid"><section className="panel"><div className="panel-heading"><div><span className="eyebrow">ADD A MEAL</span><h3>새 식사 기록</h3></div></div>
       <div className="segmented" role="tablist"><button role="tab" aria-selected={tab === 'ai'} className={tab === 'ai' ? 'selected' : ''} onClick={() => setTab('ai')}><Icon icon={faWandMagicSparkles} /> 문장으로 기록</button><button role="tab" aria-selected={tab === 'manual'} className={tab === 'manual' ? 'selected' : ''} onClick={() => setTab('manual')}><Icon icon={faPenToSquare} /> 직접 입력</button></div>
       {tab === 'ai' ? <AiComposer token={token} onSaved={refresh} initialText={initialText} /> : <ManualForm token={token} onSaved={refresh} />}</section>
-      <section className="panel"><div className="panel-heading"><div><span className="eyebrow">HISTORY</span><h3>기록한 식사 <span className="count-pill">{meals.length}</span></h3></div></div>{error && <div className="form-error" role="alert">{error}</div>}{loading ? <p className="muted">불러오는 중...</p> : meals.length ? <div className="meal-list journal-list">{meals.map((m) => <MealRow key={m.id} meal={m} onDelete={remove} />)}</div> : <EmptyState text="아직 기록이 없어요. 첫 식사를 추가해 보세요." />}</section></div>
+      <section className="panel"><div className="panel-heading"><div><span className="eyebrow">HISTORY</span><h3>기록한 식사 <span className="count-pill">{meals.length}</span></h3></div></div>{error && <div className="form-error" role="alert">{error}</div>}{loading ? <p className="muted">불러오는 중...</p> : meals.length ? <div className="meal-list journal-list">{meals.map((m) => <MealRow key={m.id} meal={m} token={token} onDelete={remove} onChanged={refresh} onError={setError} />)}</div> : <EmptyState text="아직 기록이 없어요. 첫 식사를 추가해 보세요." />}</section></div>
     <p className="medical-note"><Icon icon={faCircleExclamation} /> 공공데이터 수치는 100g 기준이며 제조사·조리법에 따라 달라질 수 있습니다.</p>
   </div></div>
 }

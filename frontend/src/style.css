@@ -178,6 +178,13 @@ input::placeholder,textarea::placeholder{color:#9fb3b0}
 .meal-1{background:#fff3d9;color:#c07a0b}.meal-2{background:#e2f4f9;color:#1a7590}.meal-3{background:#fdecec;color:var(--heart)}
 .meal-row>div{flex:1;min-width:0}.meal-row strong,.meal-row small{display:block}.meal-row strong{font-size:14px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meal-row small{font-size:12px;color:#86a09c;line-height:1.6}.meal-row b{white-space:nowrap;font:700 15px var(--num)}.meal-row b small{display:inline;font:400 11px "Pretendard",sans-serif}
+.meal-photo{width:42px;height:42px;flex:none;border-radius:13px;overflow:hidden;display:block}.meal-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-button{color:#a9bbb8;background:none;border:0;padding:7px 9px;border-radius:10px}.photo-button:hover{color:var(--teal);background:var(--teal-l)}.photo-button:disabled{opacity:.6}
+.photo-attach{display:flex;align-items:center;gap:10px;margin-top:14px}
+.photo-attach-button{display:flex;align-items:center;gap:12px;width:100%;padding:12px 15px;border:1.5px dashed var(--line-strong,#c8d6d2);border-radius:14px;background:#fbfdfd;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;text-align:left}
+.photo-attach-button:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-l)}
+.photo-attach-button svg{font-size:18px}.photo-attach-button span{display:flex;flex-direction:column;gap:2px}.photo-attach-button small{font-weight:400;color:#86a09c}
+.photo-preview{width:56px;height:56px;border-radius:14px;object-fit:cover;border:1px solid var(--line)}
 .panel>.button-soft{width:100%;margin-top:18px}
 .care-note-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#fdecec;color:var(--heart)}
 .macro-split{display:grid;gap:14px;margin-bottom:18px}.split-row{display:grid;grid-template-columns:62px 1fr 92px;gap:12px;align-items:center;font-size:13px;font-weight:700}

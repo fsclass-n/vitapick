@@ -61,6 +61,34 @@ def test_auth_policy_and_private_meals(client):
     assert web.get("/api/meals", headers=first).json() == []
 
 
+PNG_1PX = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+
+
+def test_meal_photo_attachment(client):
+    web, _ = client
+    first = register(web, "photo@example.com")
+    second = register(web, "other@example.com")
+    meal = web.post("/api/meals", headers=first, json={
+        "food_name": "현미밥", "meal_type": "점심", "eaten_at": "2026-11-16",
+        "serving_g": 150, "calories": 220, "protein": 4, "carbs": 45, "fat": 1, "photo": PNG_1PX,
+    })
+    assert meal.status_code == 201
+    assert meal.json()["has_photo"] is True
+    meal_id = meal.json()["id"]
+
+    photo = web.get(f"/api/meals/{meal_id}/photo", headers=first)
+    assert photo.status_code == 200
+    assert photo.headers["content-type"] == "image/png"
+    assert photo.content == __import__("base64").b64decode(PNG_1PX.split(",", 1)[1])
+
+    assert web.get(f"/api/meals/{meal_id}/photo", headers=second).status_code == 404
+    assert web.put(f"/api/meals/{meal_id}/photo", headers=first, json={"photo": PNG_1PX}).status_code == 200
+    assert web.put(f"/api/meals/{meal_id}/photo", headers=first, json={"photo": "data:text/plain;base64,aGVsbG8="}).status_code == 422
+    assert web.put(f"/api/meals/{meal_id}/photo", headers=first, json={"photo": "not-a-data-url"}).status_code == 422
+    assert web.delete(f"/api/meals/{meal_id}/photo", headers=first).status_code == 204
+    assert web.get(f"/api/meals/{meal_id}/photo", headers=first).status_code == 404
+
+
 def test_netlify_origin_can_call_api(client):
     web, _ = client
     response = web.options("/api/meals", headers={

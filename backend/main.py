@@ -1,3 +1,5 @@
+import base64
+import binascii
 import hashlib
 import logging
 import os
@@ -15,11 +17,11 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerificationError
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import delete, func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import delete, func, select, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .db import Base, SessionLocal, engine, get_db
@@ -47,6 +49,12 @@ parse_history: dict[int, deque] = defaultdict(deque)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        for column in ("photo LONGBLOB", "photo_mime VARCHAR(30)"):
+            try:
+                conn.execute(text(f"ALTER TABLE meals ADD COLUMN {column}"))
+            except SQLAlchemyError:
+                pass  # column already exists
     admin_email = os.getenv("ADMIN_EMAIL")
     admin_password = os.getenv("ADMIN_PASSWORD")
     if admin_email and admin_password and not valid_password(admin_password):
@@ -116,6 +124,11 @@ class MealInput(BaseModel):
     protein: float = Field(ge=0, le=10000, allow_inf_nan=False)
     carbs: float = Field(ge=0, le=10000, allow_inf_nan=False)
     fat: float = Field(ge=0, le=10000, allow_inf_nan=False)
+    photo: str | None = Field(default=None, max_length=2_900_000)
+
+
+class PhotoInput(BaseModel):
+    photo: str = Field(min_length=1, max_length=2_900_000)
 
 
 class Withdrawal(BaseModel):
@@ -282,8 +295,40 @@ def demo_login(payload: DemoLogin, db: Session = Depends(get_db)):
     return issue_token(user)
 
 
+PHOTO_MAX_BYTES = 2_000_000
+
+
+def sniff_mime(blob: bytes):
+    if blob.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if blob.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if blob[:4] == b"RIFF" and blob[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+def decode_photo(raw: str | None):
+    if not raw:
+        return None, None
+    header, sep, payload = raw.partition(",")
+    if not (sep and header.startswith("data:")):
+        raise HTTPException(status_code=422, detail="사진 형식을 확인해 주세요.")
+    try:
+        blob = base64.b64decode(payload, validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(status_code=422, detail="사진 형식을 확인해 주세요.")
+    if not blob or len(blob) > PHOTO_MAX_BYTES:
+        raise HTTPException(status_code=422, detail="사진은 2MB 이하로 첨부해 주세요.")
+    mime = sniff_mime(blob)
+    if mime is None:
+        raise HTTPException(status_code=422, detail="JPG, PNG, WebP 사진만 첨부할 수 있습니다.")
+    return blob, mime
+
+
 def public_meal(meal: Meal):
-    return {field: getattr(meal, field) for field in ("id", "food_name", "meal_type", "eaten_at", "serving_g", "calories", "protein", "carbs", "fat")}
+    data = {field: getattr(meal, field) for field in ("id", "food_name", "meal_type", "eaten_at", "serving_g", "calories", "protein", "carbs", "fat")}
+    return {**data, "has_photo": meal.photo_mime is not None}
 
 
 activity_factors = {"sedentary": 1.2, "light": 1.375, "moderate": 1.55, "active": 1.725}
@@ -332,11 +377,45 @@ def list_meals(user: User = Depends(current_user), db: Session = Depends(get_db)
 def add_meal(payload: MealInput, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if payload.meal_type not in ("아침", "점심", "저녁", "간식") or not payload.food_name.strip():
         raise HTTPException(status_code=422, detail="음식 이름 또는 식사 구분을 확인해 주세요.")
-    meal = Meal(user_id=user.id, **{**payload.model_dump(), "food_name": payload.food_name.strip()})
+    blob, mime = decode_photo(payload.photo)
+    meal = Meal(user_id=user.id, **{**payload.model_dump(exclude={"photo"}), "food_name": payload.food_name.strip()},
+                photo=blob, photo_mime=mime)
     db.add(meal)
     db.commit()
     db.refresh(meal)
     return public_meal(meal)
+
+
+def owned_meal(meal_id: int, user: User, db: Session):
+    meal = db.get(Meal, meal_id)
+    if meal is None or meal.user_id != user.id:
+        raise HTTPException(status_code=404, detail="식사 기록을 찾을 수 없습니다.")
+    return meal
+
+
+@app.get("/api/meals/{meal_id}/photo")
+def get_meal_photo(meal_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    meal = owned_meal(meal_id, user, db)
+    if meal.photo is None:
+        raise HTTPException(status_code=404, detail="첨부된 사진이 없습니다.")
+    return Response(content=meal.photo, media_type=meal.photo_mime or "image/jpeg",
+                    headers={"Cache-Control": "private, max-age=3600"})
+
+
+@app.put("/api/meals/{meal_id}/photo")
+def set_meal_photo(meal_id: int, payload: PhotoInput, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    meal = owned_meal(meal_id, user, db)
+    meal.photo, meal.photo_mime = decode_photo(payload.photo)
+    db.commit()
+    return public_meal(meal)
+
+
+@app.delete("/api/meals/{meal_id}/photo", status_code=204)
+def delete_meal_photo(meal_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    meal = owned_meal(meal_id, user, db)
+    meal.photo = None
+    meal.photo_mime = None
+    db.commit()
 
 
 @app.post("/api/meals/parse")
@@ -355,10 +434,7 @@ def parse_meal(payload: MealText, user: User = Depends(current_user), db: Sessio
 
 @app.delete("/api/meals/{meal_id}", status_code=204)
 def delete_meal(meal_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    meal = db.get(Meal, meal_id)
-    if meal is None or meal.user_id != user.id:
-        raise HTTPException(status_code=404, detail="식사 기록을 찾을 수 없습니다.")
-    db.delete(meal)
+    db.delete(owned_meal(meal_id, user, db))
     db.commit()
 
 
